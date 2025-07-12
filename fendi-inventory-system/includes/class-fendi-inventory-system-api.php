@@ -144,6 +144,36 @@ class Fendi_Inventory_System_Api {
 				'permission_callback' => array( $this, 'get_orders_permissions_check' ),
 			)
 		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/stock-requests',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_stock_requests' ),
+				'permission_callback' => array( $this, 'get_stock_requests_permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/stock-requests',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'create_stock_request' ),
+				'permission_callback' => array( $this, 'create_stock_request_permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/stock-requests/(?P<id>\\d+)',
+			array(
+				'methods'             => 'PUT',
+				'callback'            => array( $this, 'update_stock_request' ),
+				'permission_callback' => array( $this, 'update_stock_request_permissions_check' ),
+			)
+		);
 	}
 
 	/**
@@ -559,5 +589,113 @@ class Fendi_Inventory_System_Api {
 			$data[] = $order->get_data();
 		}
 		return new WP_REST_Response( $data, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to get stock requests.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function get_stock_requests_permissions_check( $request ) {
+		return current_user_can( 'edit_posts' );
+	}
+
+	/**
+	 * Get a list of stock requests.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function get_stock_requests( $request ) {
+		$posts = get_posts(
+			array(
+				'post_type'      => 'stock_request',
+				'posts_per_page' => -1,
+			)
+		);
+		foreach ( $posts as $post ) {
+			$post->meta = get_post_meta( $post->ID );
+		}
+		return new WP_REST_Response( $posts, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to create a stock request.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function create_stock_request_permissions_check( $request ) {
+		return current_user_can( 'publish_posts' );
+	}
+
+	/**
+	 * Create a new stock request.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function create_stock_request( $request ) {
+		$params = $request->get_params();
+		$post_id = wp_insert_post(
+			array(
+				'post_title'  => 'Stock Request ' . time(),
+				'post_type'   => 'stock_request',
+				'post_status' => 'publish',
+			)
+		);
+
+		if ( is_wp_error( $post_id ) ) {
+			return $post_id;
+		}
+
+		update_post_meta( $post_id, '_source_warehouse', get_current_user_id() );
+		update_post_meta( $post_id, '_destination_warehouse', $params['destination_warehouse'] );
+		update_post_meta( $post_id, '_cart', $params['cart'] );
+		update_post_meta( $post_id, '_status', 'pending' );
+
+		$post = get_post( $post_id );
+		$post->meta = get_post_meta( $post->ID );
+		return new WP_REST_Response( $post, 201 );
+	}
+
+	/**
+	 * Check if a given request has access to update a stock request.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function update_stock_request_permissions_check( $request ) {
+		return current_user_can( 'edit_post', $request['id'] );
+	}
+
+	/**
+	 * Update a stock request.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function update_stock_request( $request ) {
+		$params = $request->get_params();
+		update_post_meta( $request['id'], '_status', $params['status'] );
+
+		if ( $params['status'] === 'completed' ) {
+			$cart = get_post_meta( $request['id'], '_cart', true );
+			$source_warehouse = get_post_meta( $request['id'], '_source_warehouse', true );
+			$destination_warehouse = get_post_meta( $request['id'], '_destination_warehouse', true );
+
+			foreach ( $cart as $item ) {
+				$source_stock = get_post_meta( $item['id'], '_stock_warehouse_' . $source_warehouse, true );
+				update_post_meta( $item['id'], '_stock_warehouse_' . $source_warehouse, $source_stock - $item['quantity'] );
+
+				$destination_stock = get_post_meta( $item['id'], '_stock_warehouse_' . $destination_warehouse, true );
+				update_post_meta( $item['id'], '_stock_warehouse_' . $destination_warehouse, $destination_stock + $item['quantity'] );
+			}
+		}
+
+		$post = get_post( $request['id'] );
+		$post->meta = get_post_meta( $post->ID );
+		return new WP_REST_Response( $post, 200 );
 	}
 }

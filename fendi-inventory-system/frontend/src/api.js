@@ -44,4 +44,13 @@ export default {
   getOrders() {
     return api.get('/orders');
   },
+  getStockRequests() {
+    return api.get('/stock-requests');
+  },
+  createStockRequest(data) {
+    return api.post('/stock-requests', data);
+  },
+  updateStockRequest(id, data) {
+    return api.put(`/stock-requests/${id}`, data);
+  },
 };

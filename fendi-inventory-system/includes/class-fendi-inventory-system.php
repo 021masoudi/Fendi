@@ -220,6 +220,41 @@ class Fendi_Inventory_System {
 		);
 
 		register_post_type( 'warehouse', $args );
+
+		$labels = array(
+			'name'                  => _x( 'Stock Requests', 'Post type general name', 'fendi-inventory-system' ),
+			'singular_name'         => _x( 'Stock Request', 'Post type singular name', 'fendi-inventory-system' ),
+			'menu_name'             => _x( 'Stock Requests', 'Admin Menu text', 'fendi-inventory-system' ),
+			'name_admin_bar'        => _x( 'Stock Request', 'Add New on Toolbar', 'fendi-inventory-system' ),
+			'add_new'               => __( 'Add New', 'fendi-inventory-system' ),
+			'add_new_item'          => __( 'Add New Stock Request', 'fendi-inventory-system' ),
+			'new_item'              => __( 'New Stock Request', 'fendi-inventory-system' ),
+			'edit_item'             => __( 'Edit Stock Request', 'fendi-inventory-system' ),
+			'view_item'             => __( 'View Stock Request', 'fendi-inventory-system' ),
+			'all_items'             => __( 'All Stock Requests', 'fendi-inventory-system' ),
+			'search_items'          => __( 'Search Stock Requests', 'fendi-inventory-system' ),
+			'parent_item_colon'     => __( 'Parent Stock Requests:', 'fendi-inventory-system' ),
+			'not_found'             => __( 'No stock requests found.', 'fendi-inventory-system' ),
+			'not_found_in_trash'    => __( 'No stock requests found in Trash.', 'fendi-inventory-system' ),
+		);
+
+		$args = array(
+			'labels'             => $labels,
+			'public'             => false,
+			'publicly_queryable' => false,
+			'show_ui'            => false,
+			'show_in_menu'       => false,
+			'query_var'          => false,
+			'rewrite'            => false,
+			'capability_type'    => 'post',
+			'has_archive'        => false,
+			'hierarchical'       => false,
+			'menu_position'      => null,
+			'supports'           => array( 'title', 'editor' ),
+			'show_in_rest'       => true,
+		);
+
+		register_post_type( 'stock_request', $args );
 	}
 
 	/**

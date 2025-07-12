@@ -5,6 +5,7 @@ import UserManagement from './UserManagement';
 import WarehouseManagement from './WarehouseManagement';
 import POS from './POS';
 import Reports from './Reports';
+import StockRequests from './StockRequests';
 
 const App = () => {
   return (
@@ -25,6 +26,9 @@ const App = () => {
             <li className="mr-6">
               <Link to="/reports" className="text-blue-500 hover:text-blue-800">{__('Reports', 'fendi-inventory-system')}</Link>
             </li>
+            <li className="mr-6">
+              <Link to="/stock-requests" className="text-blue-500 hover:text-blue-800">{__('Stock Requests', 'fendi-inventory-system')}</Link>
+            </li>
           </ul>
         </nav>
         <Routes>
@@ -32,6 +36,7 @@ const App = () => {
           <Route path="/warehouses" element={<WarehouseManagement />} />
           <Route path="/pos" element={<POS />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/stock-requests" element={<StockRequests />} />
         </Routes>
       </div>
     </Router>
