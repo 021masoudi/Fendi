@@ -3,11 +3,15 @@ import { __ } from '@wordpress/i18n';
 import api from './api';
 import Modal from './Modal';
 import PaymentForm from './PaymentForm';
+import Receipt from './Receipt';
 
 const POS = () => {
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [search, setSearch] = useState('');
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [receipt, setReceipt] = useState(null);
 
   useEffect(() => {
     api.getProducts(search).then((response) => {
@@ -48,8 +52,6 @@ const POS = () => {
   const getTotal = () => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   };
-
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const handlePay = () => {
     setIsPaymentModalOpen(true);
@@ -123,14 +125,26 @@ const POS = () => {
           <PaymentForm
             total={getTotal()}
             onSubmit={(data) => {
-              api.createOrder({ ...data, cart }).then(() => {
+              api.createOrder({ ...data, cart }).then((response) => {
                 setCart([]);
-                alert(__('Sale finalized successfully!', 'fendi-inventory-system'));
                 setIsPaymentModalOpen(false);
+                setReceipt(response.data);
+                setIsReceiptModalOpen(true);
               });
             }}
             onCancel={() => setIsPaymentModalOpen(false)}
           />
+        </Modal>
+      )}
+      {isReceiptModalOpen && (
+        <Modal onClose={() => setIsReceiptModalOpen(false)}>
+          <Receipt order={receipt} />
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4"
+            onClick={() => window.print()}
+          >
+            {__('Print Receipt', 'fendi-inventory-system')}
+          </button>
         </Modal>
       )}
     </div>
