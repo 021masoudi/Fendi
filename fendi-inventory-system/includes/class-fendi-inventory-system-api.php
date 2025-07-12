@@ -124,6 +124,16 @@ class Fendi_Inventory_System_Api {
 				'permission_callback' => array( $this, 'create_order_permissions_check' ),
 			)
 		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/me',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_current_user_data' ),
+				'permission_callback' => '__return_true',
+			)
+		);
 	}
 
 	/**
@@ -144,6 +154,9 @@ class Fendi_Inventory_System_Api {
 	 */
 	public function get_users( $request ) {
 		$users = get_users();
+		foreach ( $users as $user ) {
+			$user->meta = get_user_meta( $user->ID );
+		}
 		return new WP_REST_Response( $users, 200 );
 	}
 
@@ -174,6 +187,12 @@ class Fendi_Inventory_System_Api {
 		$user = get_user_by( 'id', $user_id );
 		$user->set_role( $params['role'] );
 
+		if ( isset( $params['meta'] ) ) {
+			foreach ( $params['meta'] as $key => $value ) {
+				update_user_meta( $user_id, $key, $value );
+			}
+		}
+
 		return new WP_REST_Response( $user, 201 );
 	}
 
@@ -199,6 +218,12 @@ class Fendi_Inventory_System_Api {
 
 		if ( is_wp_error( $user_id ) ) {
 			return $user_id;
+		}
+
+		if ( isset( $params['meta'] ) ) {
+			foreach ( $params['meta'] as $key => $value ) {
+				update_user_meta( $user_id, $key, $value );
+			}
 		}
 
 		$user = get_user_by( 'id', $user_id );
@@ -263,6 +288,9 @@ class Fendi_Inventory_System_Api {
 				'posts_per_page' => -1,
 			)
 		);
+		foreach ( $posts as $post ) {
+			$post->meta = get_post_meta( $post->ID );
+		}
 		return new WP_REST_Response( $posts, 200 );
 	}
 
@@ -296,6 +324,12 @@ class Fendi_Inventory_System_Api {
 			return $post_id;
 		}
 
+		if ( isset( $params['meta'] ) ) {
+			foreach ( $params['meta'] as $key => $value ) {
+				update_post_meta( $post_id, $key, $value );
+			}
+		}
+
 		$post = get_post( $post_id );
 		return new WP_REST_Response( $post, 201 );
 	}
@@ -327,6 +361,12 @@ class Fendi_Inventory_System_Api {
 
 		if ( is_wp_error( $post_id ) ) {
 			return $post_id;
+		}
+
+		if ( isset( $params['meta'] ) ) {
+			foreach ( $params['meta'] as $key => $value ) {
+				update_post_meta( $post_id, $key, $value );
+			}
 		}
 
 		$post = get_post( $post_id );
@@ -436,6 +476,16 @@ class Fendi_Inventory_System_Api {
 		$order = wc_create_order();
 		$warehouse_id = $params['warehouse_id'];
 
+		$central_warehouse_query = new WP_Query(
+			array(
+				'post_type'      => 'warehouse',
+				'posts_per_page' => 1,
+				'meta_key'       => '_is_central',
+				'meta_value'     => true,
+			)
+		);
+		$central_warehouse = $central_warehouse_query->have_posts() ? $central_warehouse_query->posts[0] : null;
+
 		foreach ( $params['cart'] as $item ) {
 			$product = wc_get_product( $item['id'] );
 			$order->add_product( $product, $item['quantity'] );
@@ -444,6 +494,11 @@ class Fendi_Inventory_System_Api {
 				$stock = get_post_meta( $item['id'], '_stock_warehouse_' . $warehouse_id, true );
 				update_post_meta( $item['id'], '_stock_warehouse_' . $warehouse_id, $stock - $item['quantity'] );
 			}
+
+			if ( $central_warehouse ) {
+				$central_stock = get_post_meta( $item['id'], '_stock_warehouse_' . $central_warehouse->ID, true );
+				update_post_meta( $item['id'], '_stock_warehouse_' . $central_warehouse->ID, $central_stock - $item['quantity'] );
+			}
 		}
 
 		$order->set_customer_id( $params['customer'] );
@@ -451,5 +506,20 @@ class Fendi_Inventory_System_Api {
 		$order->update_status( 'completed' );
 
 		return new WP_REST_Response( $order->get_data(), 201 );
+	}
+
+	/**
+	 * Get the current user data.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function get_current_user_data( $request ) {
+		$user = wp_get_current_user();
+		if ( $user->ID === 0 ) {
+			return new WP_Error( 'not_logged_in', __( 'You are not logged in.', 'fendi-inventory-system' ), array( 'status' => 401 ) );
+		}
+		$user->meta = get_user_meta( $user->ID );
+		return new WP_REST_Response( $user, 200 );
 	}
 }

@@ -14,8 +14,15 @@ const POS = () => {
   const [receipt, setReceipt] = useState(null);
   const [warehouses, setWarehouses] = useState([]);
   const [selectedWarehouse, setSelectedWarehouse] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
+    api.getMe().then((response) => {
+      setCurrentUser(response.data);
+      if (response.data.meta._assigned_warehouse) {
+        setSelectedWarehouse(response.data.meta._assigned_warehouse[0]);
+      }
+    });
     api.getProducts(search).then((response) => {
       setProducts(response.data);
     });
@@ -71,13 +78,21 @@ const POS = () => {
             className="border p-2"
             value={selectedWarehouse}
             onChange={(e) => setSelectedWarehouse(e.target.value)}
+            disabled={currentUser && currentUser.meta._assigned_warehouse}
           >
             <option value="">{__('All Warehouses', 'fendi-inventory-system')}</option>
-            {warehouses.map((warehouse) => (
-              <option key={warehouse.id} value={warehouse.id}>
-                {warehouse.title.rendered}
-              </option>
-            ))}
+            {warehouses
+              .filter(
+                (warehouse) =>
+                  !currentUser ||
+                  !currentUser.meta._assigned_warehouse ||
+                  warehouse.id == currentUser.meta._assigned_warehouse[0]
+              )
+              .map((warehouse) => (
+                <option key={warehouse.id} value={warehouse.id}>
+                  {warehouse.title.rendered}
+                </option>
+              ))}
           </select>
         </div>
         <input

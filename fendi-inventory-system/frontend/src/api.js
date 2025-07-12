@@ -38,4 +38,7 @@ export default {
   createOrder(data) {
     return api.post('/orders', data);
   },
+  getMe() {
+    return api.get('/me');
+  },
 };

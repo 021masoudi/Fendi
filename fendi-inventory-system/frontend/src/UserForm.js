@@ -1,15 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
+import api from './api';
 
 const UserForm = ({ user, onSubmit, onCancel }) => {
   const [username, setUsername] = useState(user ? user.data.user_login : '');
   const [email, setEmail] = useState(user ? user.data.user_email : '');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState(user ? user.roles[0] : 'subscriber');
+  const [assignedWarehouse, setAssignedWarehouse] = useState(user ? user.meta._assigned_warehouse : '');
+  const [warehouses, setWarehouses] = useState([]);
+
+  useEffect(() => {
+    api.getWarehouses().then((response) => {
+      setWarehouses(response.data);
+    });
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({ username, email, password, role });
+    onSubmit({ username, email, password, role, meta: { _assigned_warehouse: assignedWarehouse } });
   };
 
   return (
@@ -68,6 +77,24 @@ const UserForm = ({ user, onSubmit, onCancel }) => {
           <option value="author">{__('Author', 'fendi-inventory-system')}</option>
           <option value="editor">{__('Editor', 'fendi-inventory-system')}</option>
           <option value="administrator">{__('Administrator', 'fendi-inventory-system')}</option>
+        </select>
+      </div>
+      <div className="mb-4">
+        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="assigned-warehouse">
+          {__('Assigned Warehouse', 'fendi-inventory-system')}
+        </label>
+        <select
+          id="assigned-warehouse"
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          value={assignedWarehouse}
+          onChange={(e) => setAssignedWarehouse(e.target.value)}
+        >
+          <option value="">{__('None', 'fendi-inventory-system')}</option>
+          {warehouses.map((warehouse) => (
+            <option key={warehouse.id} value={warehouse.id}>
+              {warehouse.title.rendered}
+            </option>
+          ))}
         </select>
       </div>
       <div className="flex items-center justify-between">

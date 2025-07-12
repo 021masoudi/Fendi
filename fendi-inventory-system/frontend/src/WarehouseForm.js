@@ -3,10 +3,11 @@ import { __ } from '@wordpress/i18n';
 
 const WarehouseForm = ({ warehouse, onSubmit, onCancel }) => {
   const [name, setName] = useState(warehouse ? warehouse.title.rendered : '');
+  const [isCentral, setIsCentral] = useState(warehouse ? warehouse.meta._is_central : false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({ title: name });
+    onSubmit({ title: name, meta: { _is_central: isCentral } });
   };
 
   return (
@@ -23,6 +24,18 @@ const WarehouseForm = ({ warehouse, onSubmit, onCancel }) => {
           onChange={(e) => setName(e.target.value)}
           required
         />
+      </div>
+      <div className="mb-4">
+        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="is-central">
+          <input
+            id="is-central"
+            type="checkbox"
+            checked={isCentral}
+            onChange={(e) => setIsCentral(e.target.checked)}
+            className="mr-2"
+          />
+          {__('Is Central Warehouse?', 'fendi-inventory-system')}
+        </label>
       </div>
       <div className="flex items-center justify-between">
         <button
