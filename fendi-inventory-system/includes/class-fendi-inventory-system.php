@@ -122,6 +122,11 @@ class Fendi_Inventory_System {
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-fendi-inventory-system-public.php';
 
+		/**
+		 * The class responsible for defining all API routes.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-fendi-inventory-system-api.php';
+
 		$this->loader = new Fendi_Inventory_System_Loader();
 
 	}
@@ -153,10 +158,12 @@ class Fendi_Inventory_System {
 	private function define_admin_hooks() {
 
 		$plugin_admin = new Fendi_Inventory_System_Admin( $this->get_plugin_name(), $this->get_version() );
+		$plugin_api = new Fendi_Inventory_System_Api();
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_admin_menu' );
+		$this->loader->add_action( 'rest_api_init', $plugin_api, 'register_routes' );
 
 	}
 

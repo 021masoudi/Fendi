@@ -72,7 +72,18 @@ class Fendi_Inventory_System_Admin {
 	 */
 	public function enqueue_scripts() {
 
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/fendi-inventory-system-admin.js', array( 'wp-element' ), $this->version, true );
+		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/fendi-inventory-system-admin.js', array( 'wp-element', 'wp-i18n' ), $this->version, true );
+
+		wp_set_script_translations( $this->plugin_name, 'fendi-inventory-system', plugin_dir_path( __FILE__ ) . '../languages' );
+
+		wp_localize_script(
+			$this->plugin_name,
+			'wpApiSettings',
+			array(
+				'root'  => esc_url_raw( rest_url() ),
+				'nonce' => wp_create_nonce( 'wp_rest' ),
+			)
+		);
 
 	}
 
@@ -84,8 +95,8 @@ class Fendi_Inventory_System_Admin {
 	public function add_admin_menu() {
 
 		add_menu_page(
-			'Fendi Inventory System',
-			'Fendi Inventory',
+			__( 'Fendi Inventory System', 'fendi-inventory-system' ),
+			__( 'Fendi Inventory', 'fendi-inventory-system' ),
 			'manage_options',
 			$this->plugin_name,
 			array( $this, 'display_admin_page' ),

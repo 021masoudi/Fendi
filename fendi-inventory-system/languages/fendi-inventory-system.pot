@@ -1,0 +1,31 @@
+# Copyright (C) 2023 Your Name
+# This file is distributed under the same license as the Fendi Inventory System plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Fendi Inventory System 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/fendi-inventory-system\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2023-10-27 10:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: Jules\n"
+"X-Domain: fendi-inventory-system\n"
+
+#. Plugin Name of the plugin/theme
+msgid "Fendi Inventory System"
+msgstr ""
+
+#. Description of the plugin/theme
+msgid "A Unified WooCommerce Integrated Plugin for In-Store Sales and Inventory Management."
+msgstr ""
+
+#: admin/class-fendi-inventory-system-admin.php:109
+msgid "Fendi Inventory"
+msgstr ""
+
+#: frontend/src/App.js:7
+msgid "Welcome to the admin panel!"
+msgstr ""
