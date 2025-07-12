@@ -20,4 +20,19 @@ export default {
   deleteUser(id) {
     return api.delete(`/users/${id}`);
   },
+  getWarehouses() {
+    return api.get('/warehouses');
+  },
+  createWarehouse(data) {
+    return api.post('/warehouses', data);
+  },
+  updateWarehouse(id, data) {
+    return api.put(`/warehouses/${id}`, data);
+  },
+  deleteWarehouse(id) {
+    return api.delete(`/warehouses/${id}`);
+  },
+  getProducts(search = '') {
+    return api.get(`/products?s=${search}`);
+  },
 };

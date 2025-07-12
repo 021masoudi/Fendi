@@ -164,7 +164,60 @@ class Fendi_Inventory_System {
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_admin_menu' );
 		$this->loader->add_action( 'rest_api_init', $plugin_api, 'register_routes' );
+		$this->loader->add_action( 'init', $this, 'register_post_types' );
 
+	}
+
+	/**
+	 * Register the custom post types for the plugin.
+	 *
+	 * @since    1.0.0
+	 */
+	public function register_post_types() {
+		$labels = array(
+			'name'                  => _x( 'Warehouses', 'Post type general name', 'fendi-inventory-system' ),
+			'singular_name'         => _x( 'Warehouse', 'Post type singular name', 'fendi-inventory-system' ),
+			'menu_name'             => _x( 'Warehouses', 'Admin Menu text', 'fendi-inventory-system' ),
+			'name_admin_bar'        => _x( 'Warehouse', 'Add New on Toolbar', 'fendi-inventory-system' ),
+			'add_new'               => __( 'Add New', 'fendi-inventory-system' ),
+			'add_new_item'          => __( 'Add New Warehouse', 'fendi-inventory-system' ),
+			'new_item'              => __( 'New Warehouse', 'fendi-inventory-system' ),
+			'edit_item'             => __( 'Edit Warehouse', 'fendi-inventory-system' ),
+			'view_item'             => __( 'View Warehouse', 'fendi-inventory-system' ),
+			'all_items'             => __( 'All Warehouses', 'fendi-inventory-system' ),
+			'search_items'          => __( 'Search Warehouses', 'fendi-inventory-system' ),
+			'parent_item_colon'     => __( 'Parent Warehouses:', 'fendi-inventory-system' ),
+			'not_found'             => __( 'No warehouses found.', 'fendi-inventory-system' ),
+			'not_found_in_trash'    => __( 'No warehouses found in Trash.', 'fendi-inventory-system' ),
+			'featured_image'        => _x( 'Warehouse Cover Image', 'Overrides the “Featured Image” phrase for this post type. Added in 4.3', 'fendi-inventory-system' ),
+			'set_featured_image'    => _x( 'Set cover image', 'Overrides the “Set featured image” phrase for this post type. Added in 4.3', 'fendi-inventory-system' ),
+			'remove_featured_image' => _x( 'Remove cover image', 'Overrides the “Remove featured image” phrase for this post type. Added in 4.3', 'fendi-inventory-system' ),
+			'use_featured_image'    => _x( 'Use as cover image', 'Overrides the “Use as featured image” phrase for this post type. Added in 4.3', 'fendi-inventory-system' ),
+			'archives'              => _x( 'Warehouse archives', 'The post type archive label used in nav menus. Default “Post Archives”. Added in 4.4', 'fendi-inventory-system' ),
+			'insert_into_item'      => _x( 'Insert into warehouse', 'Overrides the “Insert into post”/”Insert into page” phrase (used when inserting media into a post). Added in 4.4', 'fendi-inventory-system' ),
+			'uploaded_to_this_item' => _x( 'Uploaded to this warehouse', 'Overrides the “Uploaded to this post”/”Uploaded to this page” phrase (used when viewing media attached to a post). Added in 4.4', 'fendi-inventory-system' ),
+			'filter_items_list'     => _x( 'Filter warehouses list', 'Screen reader text for the filter links heading on the post type listing screen. Default “Filter posts list”/”Filter pages list”. Added in 4.4', 'fendi-inventory-system' ),
+			'items_list_navigation' => _x( 'Warehouses list navigation', 'Screen reader text for the pagination heading on the post type listing screen. Default “Posts list navigation”/”Pages list navigation”. Added in 4.4', 'fendi-inventory-system' ),
+			'items_list'            => _x( 'Warehouses list', 'Screen reader text for the items list heading on the post type listing screen. Default “Posts list”/”Pages list”. Added in 4.4', 'fendi-inventory-system' ),
+		);
+
+		$args = array(
+			'labels'             => $labels,
+			'public'             => true,
+			'publicly_queryable' => true,
+			'show_ui'            => true,
+			'show_in_menu'       => false,
+			'query_var'          => true,
+			'rewrite'            => array( 'slug' => 'warehouse' ),
+			'capability_type'    => 'post',
+			'has_archive'        => true,
+			'hierarchical'       => false,
+			'menu_position'      => null,
+			'supports'           => array( 'title', 'editor', 'author', 'thumbnail', 'excerpt', 'comments' ),
+			'show_in_rest'       => true,
+		);
+
+		register_post_type( 'warehouse', $args );
 	}
 
 	/**

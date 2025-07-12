@@ -64,6 +64,56 @@ class Fendi_Inventory_System_Api {
 				'permission_callback' => array( $this, 'delete_user_permissions_check' ),
 			)
 		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/warehouses',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_warehouses' ),
+				'permission_callback' => array( $this, 'get_warehouses_permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/warehouses',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'create_warehouse' ),
+				'permission_callback' => array( $this, 'create_warehouse_permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/warehouses/(?P<id>\\d+)',
+			array(
+				'methods'             => 'PUT',
+				'callback'            => array( $this, 'update_warehouse' ),
+				'permission_callback' => array( $this, 'update_warehouse_permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/warehouses/(?P<id>\\d+)',
+			array(
+				'methods'             => 'DELETE',
+				'callback'            => array( $this, 'delete_warehouse' ),
+				'permission_callback' => array( $this, 'delete_warehouse_permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/products',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_products' ),
+				'permission_callback' => array( $this, 'get_products_permissions_check' ),
+			)
+		);
 	}
 
 	/**
@@ -178,5 +228,163 @@ class Fendi_Inventory_System_Api {
 		}
 
 		return new WP_REST_Response( true, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to get warehouses.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function get_warehouses_permissions_check( $request ) {
+		return current_user_can( 'edit_posts' );
+	}
+
+	/**
+	 * Get a list of warehouses.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function get_warehouses( $request ) {
+		$posts = get_posts(
+			array(
+				'post_type'      => 'warehouse',
+				'posts_per_page' => -1,
+			)
+		);
+		return new WP_REST_Response( $posts, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to create a warehouse.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function create_warehouse_permissions_check( $request ) {
+		return current_user_can( 'publish_posts' );
+	}
+
+	/**
+	 * Create a new warehouse.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function create_warehouse( $request ) {
+		$params = $request->get_params();
+		$post_id = wp_insert_post(
+			array(
+				'post_title'  => $params['title'],
+				'post_type'   => 'warehouse',
+				'post_status' => 'publish',
+			)
+		);
+
+		if ( is_wp_error( $post_id ) ) {
+			return $post_id;
+		}
+
+		$post = get_post( $post_id );
+		return new WP_REST_Response( $post, 201 );
+	}
+
+	/**
+	 * Check if a given request has access to update a warehouse.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function update_warehouse_permissions_check( $request ) {
+		return current_user_can( 'edit_post', $request['id'] );
+	}
+
+	/**
+	 * Update a warehouse.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function update_warehouse( $request ) {
+		$params = $request->get_params();
+		$post_id = wp_update_post(
+			array(
+				'ID'         => $request['id'],
+				'post_title' => $params['title'],
+			)
+		);
+
+		if ( is_wp_error( $post_id ) ) {
+			return $post_id;
+		}
+
+		$post = get_post( $post_id );
+		return new WP_REST_Response( $post, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to delete a warehouse.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function delete_warehouse_permissions_check( $request ) {
+		return current_user_can( 'delete_post', $request['id'] );
+	}
+
+	/**
+	 * Delete a warehouse.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function delete_warehouse( $request ) {
+		$post = get_post( $request['id'] );
+		if ( ! $post || $post->post_type !== 'warehouse' ) {
+			return new WP_Error( 'post_not_found', __( 'Post not found.', 'fendi-inventory-system' ), array( 'status' => 404 ) );
+		}
+
+		if ( ! current_user_can( 'delete_post', $post->ID ) ) {
+			return new WP_Error( 'permission_denied', __( 'You do not have permission to delete this post.', 'fendi-inventory-system' ), array( 'status' => 403 ) );
+		}
+
+		$result = wp_delete_post( $post->ID, true );
+
+		if ( ! $result ) {
+			return new WP_Error( 'post_deletion_failed', __( 'Failed to delete post.', 'fendi-inventory-system' ), array( 'status' => 500 ) );
+		}
+
+		return new WP_REST_Response( true, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to get products.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function get_products_permissions_check( $request ) {
+		return current_user_can( 'edit_posts' );
+	}
+
+	/**
+	 * Get a list of products.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function get_products( $request ) {
+		$args = array(
+			'post_type'      => 'product',
+			'posts_per_page' => -1,
+		);
+
+		if ( isset( $request['s'] ) ) {
+			$args['s'] = $request['s'];
+		}
+
+		$products = wc_get_products( $args );
+		return new WP_REST_Response( $products, 200 );
 	}
 }
