@@ -1,4 +1,5 @@
 const path = require('path');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
   entry: './src/index.js',
@@ -22,12 +23,16 @@ module.exports = {
       {
         test: /\.css$/i,
         use: [
-          'style-loader',
+          MiniCssExtractPlugin.loader,
           'css-loader',
           'postcss-loader',
         ],
       },
     ],
   },
-  plugins: [],
+  plugins: [
+    new MiniCssExtractPlugin({
+      filename: '../css/fendi-inventory-system-admin.css',
+    }),
+  ],
 };
