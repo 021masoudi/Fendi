@@ -395,6 +395,23 @@ class Fendi_Inventory_System_Api {
 		}
 
 		$products = wc_get_products( $args );
+		$warehouses = get_posts(
+			array(
+				'post_type'      => 'warehouse',
+				'posts_per_page' => -1,
+			)
+		);
+
+		foreach ( $products as $product ) {
+			$product_data = $product->get_data();
+			$product_data['warehouse_stock'] = array();
+			foreach ( $warehouses as $warehouse ) {
+				$stock = get_post_meta( $product->get_id(), '_stock_warehouse_' . $warehouse->ID, true );
+				$product_data['warehouse_stock'][ $warehouse->ID ] = $stock;
+			}
+			$product->set_props( $product_data );
+		}
+
 		return new WP_REST_Response( $products, 200 );
 	}
 
@@ -417,10 +434,16 @@ class Fendi_Inventory_System_Api {
 	public function create_order( $request ) {
 		$params = $request->get_params();
 		$order = wc_create_order();
+		$warehouse_id = $params['warehouse_id'];
 
 		foreach ( $params['cart'] as $item ) {
 			$product = wc_get_product( $item['id'] );
 			$order->add_product( $product, $item['quantity'] );
+
+			if ( $warehouse_id ) {
+				$stock = get_post_meta( $item['id'], '_stock_warehouse_' . $warehouse_id, true );
+				update_post_meta( $item['id'], '_stock_warehouse_' . $warehouse_id, $stock - $item['quantity'] );
+			}
 		}
 
 		$order->set_customer_id( $params['customer'] );

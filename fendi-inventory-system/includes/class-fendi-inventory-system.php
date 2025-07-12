@@ -165,6 +165,8 @@ class Fendi_Inventory_System {
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_admin_menu' );
 		$this->loader->add_action( 'rest_api_init', $plugin_api, 'register_routes' );
 		$this->loader->add_action( 'init', $this, 'register_post_types' );
+		$this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'add_warehouse_inventory_metabox' );
+		$this->loader->add_action( 'save_post_product', $plugin_admin, 'save_warehouse_inventory_metabox' );
 
 	}
 

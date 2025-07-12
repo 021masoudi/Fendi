@@ -12,10 +12,15 @@ const POS = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [receipt, setReceipt] = useState(null);
+  const [warehouses, setWarehouses] = useState([]);
+  const [selectedWarehouse, setSelectedWarehouse] = useState('');
 
   useEffect(() => {
     api.getProducts(search).then((response) => {
       setProducts(response.data);
+    });
+    api.getWarehouses().then((response) => {
+      setWarehouses(response.data);
     });
   }, [search]);
 
@@ -60,7 +65,21 @@ const POS = () => {
   return (
     <div className="grid grid-cols-2 gap-4">
       <div>
-        <h2 className="text-xl font-bold mb-4">{__('Products', 'fendi-inventory-system')}</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">{__('Products', 'fendi-inventory-system')}</h2>
+          <select
+            className="border p-2"
+            value={selectedWarehouse}
+            onChange={(e) => setSelectedWarehouse(e.target.value)}
+          >
+            <option value="">{__('All Warehouses', 'fendi-inventory-system')}</option>
+            {warehouses.map((warehouse) => (
+              <option key={warehouse.id} value={warehouse.id}>
+                {warehouse.title.rendered}
+              </option>
+            ))}
+          </select>
+        </div>
         <input
           type="text"
           placeholder={__('Search products...', 'fendi-inventory-system')}
@@ -77,6 +96,13 @@ const POS = () => {
             >
               <h3 className="font-bold">{product.name}</h3>
               <p>{product.price}</p>
+              <div>
+                {Object.entries(product.warehouse_stock).map(([warehouseId, stock]) => (
+                  <p key={warehouseId}>
+                    Warehouse {warehouseId}: {stock}
+                  </p>
+                ))}
+              </div>
             </div>
           ))}
         </div>
@@ -125,7 +151,7 @@ const POS = () => {
           <PaymentForm
             total={getTotal()}
             onSubmit={(data) => {
-              api.createOrder({ ...data, cart }).then((response) => {
+              api.createOrder({ ...data, cart, warehouse_id: selectedWarehouse }).then((response) => {
                 setCart([]);
                 setIsPaymentModalOpen(false);
                 setReceipt(response.data);

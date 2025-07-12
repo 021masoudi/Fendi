@@ -117,4 +117,91 @@ class Fendi_Inventory_System_Admin {
 		<?php
 	}
 
+	/**
+	 * Add the warehouse inventory metabox.
+	 *
+	 * @since    1.0.0
+	 */
+	public function add_warehouse_inventory_metabox() {
+		add_meta_box(
+			'fendi_warehouse_inventory',
+			__( 'Warehouse Inventory', 'fendi-inventory-system' ),
+			array( $this, 'render_warehouse_inventory_metabox' ),
+			'product',
+			'normal',
+			'default'
+		);
+	}
+
+	/**
+	 * Render the warehouse inventory metabox.
+	 *
+	 * @since    1.0.0
+	 */
+	public function render_warehouse_inventory_metabox( $post ) {
+		wp_nonce_field( 'fendi_warehouse_inventory_data', 'fendi_warehouse_inventory_nonce' );
+		$warehouses = get_posts(
+			array(
+				'post_type'      => 'warehouse',
+				'posts_per_page' => -1,
+			)
+		);
+
+		foreach ( $warehouses as $warehouse ) {
+			$stock = get_post_meta( $post->ID, '_stock_warehouse_' . $warehouse->ID, true );
+			?>
+			<p>
+				<label for="fendi_warehouse_<?php echo esc_attr( $warehouse->ID ); ?>">
+					<?php echo esc_html( $warehouse->post_title ); ?>
+				</label>
+				<input
+					type="number"
+					id="fendi_warehouse_<?php echo esc_attr( $warehouse->ID ); ?>"
+					name="fendi_warehouse_<?php echo esc_attr( $warehouse->ID ); ?>"
+					value="<?php echo esc_attr( $stock ); ?>"
+				/>
+			</p>
+			<?php
+		}
+	}
+
+	/**
+	 * Save the warehouse inventory metabox data.
+	 *
+	 * @since    1.0.0
+	 */
+	public function save_warehouse_inventory_metabox( $post_id ) {
+		if ( ! isset( $_POST['fendi_warehouse_inventory_nonce'] ) ) {
+			return;
+		}
+
+		if ( ! wp_verify_nonce( $_POST['fendi_warehouse_inventory_nonce'], 'fendi_warehouse_inventory_data' ) ) {
+			return;
+		}
+
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
+
+		$warehouses = get_posts(
+			array(
+				'post_type'      => 'warehouse',
+				'posts_per_page' => -1,
+			)
+		);
+
+		foreach ( $warehouses as $warehouse ) {
+			if ( isset( $_POST[ 'fendi_warehouse_' . $warehouse->ID ] ) ) {
+				update_post_meta(
+					$post_id,
+					'_stock_warehouse_' . $warehouse->ID,
+					sanitize_text_field( $_POST[ 'fendi_warehouse_' . $warehouse->ID ] )
+				);
+			}
+		}
+	}
 }
