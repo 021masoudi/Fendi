@@ -583,7 +583,34 @@ class Fendi_Inventory_System_Api {
 	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
 	 */
 	public function get_orders( $request ) {
-		$orders = wc_get_orders( array( 'numberposts' => -1 ) );
+		$args = array(
+			'numberposts' => -1,
+			'post_type'   => 'shop_order',
+			'post_status' => 'wc-completed',
+		);
+
+		if ( isset( $request['start_date'] ) && isset( $request['end_date'] ) ) {
+			$args['date_query'] = array(
+				array(
+					'after'     => $request['start_date'],
+					'before'    => $request['end_date'],
+					'inclusive' => true,
+				),
+			);
+		}
+
+		if ( isset( $request['user_id'] ) ) {
+			$args['customer_id'] = $request['user_id'];
+		}
+
+		if ( isset( $request['warehouse_id'] ) ) {
+			$args['meta_query'][] = array(
+				'key'   => '_warehouse_id',
+				'value' => $request['warehouse_id'],
+			);
+		}
+
+		$orders = wc_get_orders( $args );
 		$data = array();
 		foreach ( $orders as $order ) {
 			$data[] = $order->get_data();

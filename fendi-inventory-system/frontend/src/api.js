@@ -41,8 +41,8 @@ export default {
   getMe() {
     return api.get('/me');
   },
-  getOrders() {
-    return api.get('/orders');
+  getOrders(params) {
+    return api.get('/orders', { params });
   },
   getStockRequests() {
     return api.get('/stock-requests');
