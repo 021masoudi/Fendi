@@ -114,6 +114,16 @@ class Fendi_Inventory_System_Api {
 				'permission_callback' => array( $this, 'get_products_permissions_check' ),
 			)
 		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/orders',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'create_order' ),
+				'permission_callback' => array( $this, 'create_order_permissions_check' ),
+			)
+		);
 	}
 
 	/**
@@ -386,5 +396,37 @@ class Fendi_Inventory_System_Api {
 
 		$products = wc_get_products( $args );
 		return new WP_REST_Response( $products, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to create an order.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function create_order_permissions_check( $request ) {
+		return current_user_can( 'publish_posts' );
+	}
+
+	/**
+	 * Create a new order.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function create_order( $request ) {
+		$params = $request->get_params();
+		$order = wc_create_order();
+
+		foreach ( $params['cart'] as $item ) {
+			$product = wc_get_product( $item['id'] );
+			$order->add_product( $product, $item['quantity'] );
+		}
+
+		$order->set_customer_id( $params['customer'] );
+		$order->calculate_totals();
+		$order->update_status( 'completed' );
+
+		return new WP_REST_Response( $order->get_data(), 201 );
 	}
 }

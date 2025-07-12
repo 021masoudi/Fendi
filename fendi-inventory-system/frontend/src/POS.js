@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
 import api from './api';
+import Modal from './Modal';
+import PaymentForm from './PaymentForm';
 
 const POS = () => {
   const [products, setProducts] = useState([]);
@@ -45,6 +47,12 @@ const POS = () => {
 
   const getTotal = () => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+  };
+
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+  const handlePay = () => {
+    setIsPaymentModalOpen(true);
   };
 
   return (
@@ -102,8 +110,29 @@ const POS = () => {
         </table>
         <div className="mt-4">
           <h3 className="text-lg font-bold">{__('Total:', 'fendi-inventory-system')} {getTotal()}</h3>
+          <button
+            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-4"
+            onClick={handlePay}
+          >
+            {__('Pay', 'fendi-inventory-system')}
+          </button>
         </div>
       </div>
+      {isPaymentModalOpen && (
+        <Modal onClose={() => setIsPaymentModalOpen(false)}>
+          <PaymentForm
+            total={getTotal()}
+            onSubmit={(data) => {
+              api.createOrder({ ...data, cart }).then(() => {
+                setCart([]);
+                alert(__('Sale finalized successfully!', 'fendi-inventory-system'));
+                setIsPaymentModalOpen(false);
+              });
+            }}
+            onCancel={() => setIsPaymentModalOpen(false)}
+          />
+        </Modal>
+      )}
     </div>
   );
 };

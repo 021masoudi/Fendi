@@ -35,4 +35,7 @@ export default {
   getProducts(search = '') {
     return api.get(`/products?s=${search}`);
   },
+  createOrder(data) {
+    return api.post('/orders', data);
+  },
 };
