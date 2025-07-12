@@ -41,4 +41,7 @@ export default {
   getMe() {
     return api.get('/me');
   },
+  getOrders() {
+    return api.get('/orders');
+  },
 };

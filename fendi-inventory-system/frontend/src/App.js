@@ -4,6 +4,7 @@ import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import UserManagement from './UserManagement';
 import WarehouseManagement from './WarehouseManagement';
 import POS from './POS';
+import Reports from './Reports';
 
 const App = () => {
   return (
@@ -21,12 +22,16 @@ const App = () => {
             <li className="mr-6">
               <Link to="/pos" className="text-blue-500 hover:text-blue-800">{__('POS', 'fendi-inventory-system')}</Link>
             </li>
+            <li className="mr-6">
+              <Link to="/reports" className="text-blue-500 hover:text-blue-800">{__('Reports', 'fendi-inventory-system')}</Link>
+            </li>
           </ul>
         </nav>
         <Routes>
           <Route path="/users" element={<UserManagement />} />
           <Route path="/warehouses" element={<WarehouseManagement />} />
           <Route path="/pos" element={<POS />} />
+          <Route path="/reports" element={<Reports />} />
         </Routes>
       </div>
     </Router>

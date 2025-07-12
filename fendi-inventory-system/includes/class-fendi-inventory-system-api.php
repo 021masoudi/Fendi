@@ -134,6 +134,16 @@ class Fendi_Inventory_System_Api {
 				'permission_callback' => '__return_true',
 			)
 		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/orders',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_orders' ),
+				'permission_callback' => array( $this, 'get_orders_permissions_check' ),
+			)
+		);
 	}
 
 	/**
@@ -488,7 +498,10 @@ class Fendi_Inventory_System_Api {
 
 		foreach ( $params['cart'] as $item ) {
 			$product = wc_get_product( $item['id'] );
-			$order->add_product( $product, $item['quantity'] );
+			$item_id = $order->add_product( $product, $item['quantity'] );
+
+			$cost_price = get_post_meta( $item['id'], '_cost_price', true );
+			wc_add_order_item_meta( $item_id, '_cost_price', $cost_price );
 
 			if ( $warehouse_id ) {
 				$stock = get_post_meta( $item['id'], '_stock_warehouse_' . $warehouse_id, true );
@@ -521,5 +534,30 @@ class Fendi_Inventory_System_Api {
 		}
 		$user->meta = get_user_meta( $user->ID );
 		return new WP_REST_Response( $user, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to get orders.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function get_orders_permissions_check( $request ) {
+		return current_user_can( 'edit_posts' );
+	}
+
+	/**
+	 * Get a list of orders.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function get_orders( $request ) {
+		$orders = wc_get_orders( array( 'numberposts' => -1 ) );
+		$data = array();
+		foreach ( $orders as $order ) {
+			$data[] = $order->get_data();
+		}
+		return new WP_REST_Response( $data, 200 );
 	}
 }

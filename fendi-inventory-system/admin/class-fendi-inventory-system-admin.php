@@ -147,6 +147,21 @@ class Fendi_Inventory_System_Admin {
 			)
 		);
 
+		$cost_price = get_post_meta( $post->ID, '_cost_price', true );
+		?>
+		<p>
+			<label for="fendi_cost_price">
+				<?php esc_html_e( 'Cost Price', 'fendi-inventory-system' ); ?>
+			</label>
+			<input
+				type="number"
+				id="fendi_cost_price"
+				name="fendi_cost_price"
+				value="<?php echo esc_attr( $cost_price ); ?>"
+			/>
+		</p>
+		<?php
+
 		foreach ( $warehouses as $warehouse ) {
 			$stock = get_post_meta( $post->ID, '_stock_warehouse_' . $warehouse->ID, true );
 			?>
@@ -193,6 +208,10 @@ class Fendi_Inventory_System_Admin {
 				'posts_per_page' => -1,
 			)
 		);
+
+		if ( isset( $_POST['fendi_cost_price'] ) ) {
+			update_post_meta( $post_id, '_cost_price', sanitize_text_field( $_POST['fendi_cost_price'] ) );
+		}
 
 		foreach ( $warehouses as $warehouse ) {
 			if ( isset( $_POST[ 'fendi_warehouse_' . $warehouse->ID ] ) ) {
