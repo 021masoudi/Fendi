@@ -55,6 +55,9 @@ export const clockIn = () => api.post('/time-clock/clock-in');
 export const clockOut = (id) => api.post(`/time-clock/clock-out/${id}`);
 export const getTimeLogs = (params) => api.get('/time-logs', { params });
 
+export const getOrderById = (id) => api.get(`/orders/${id}`); // Assuming this endpoint exists or will be created
+export const returnOrder = (id, data) => api.post(`/orders/${id}/return`, data);
+
 export default {
   getUsers() {
     return api.get('/users');

@@ -26,6 +26,7 @@ import LoyaltySettings from './LoyaltySettings';
 import DiscountCampaignManagement from './DiscountCampaignManagement';
 import TimeClock from './TimeClock';
 import TimeLogReport from './TimeLogReport';
+import ReturnOrder from './ReturnOrder';
 
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -176,6 +177,11 @@ const App = () => {
                     <Link to="/reports/time-logs" className="text-blue-500 hover:text-blue-800">{__('Time Log Report', 'fendi-inventory-system')}</Link>
                 </li>
             )}
+             {(canAccess('administrator') || canAccess('cashier')) && (
+                <li className="mr-6">
+                    <Link to="/returns" className="text-blue-500 hover:text-blue-800">{__('Returns', 'fendi-inventory-system')}</Link>
+                </li>
+            )}
           </ul>
         </nav>
         {isOnline && <TimeClock currentUser={currentUser} />}
@@ -206,6 +212,7 @@ const App = () => {
           {canAccess('administrator') && <Route path="/settings/loyalty" element={<LoyaltySettings />} />}
           {canAccess('administrator') && <Route path="/discounts" element={<DiscountCampaignManagement />} />}
           {canAccess('administrator') && <Route path="/reports/time-logs" element={<TimeLogReport />} />}
+          {(canAccess('administrator') || canAccess('cashier')) && <Route path="/returns" element={<ReturnOrder />} />}
         </Routes>
       </div>
     </Router>

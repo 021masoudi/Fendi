@@ -5,8 +5,10 @@ import Modal from './Modal';
 import PaymentForm from './PaymentForm';
 import Receipt from './Receipt';
 import { idb } from './idb';
+import { useLocation } from 'react-router-dom';
 
 const POS = () => {
+  const location = useLocation();
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [search, setSearch] = useState('');
@@ -20,6 +22,12 @@ const POS = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [receipt, setReceipt] = useState(null);
+
+  useEffect(() => {
+    if (location.state && location.state.exchangeCredit) {
+        setExchangeCredit(location.state.exchangeCredit);
+    }
+  }, [location]);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -127,12 +135,13 @@ const POS = () => {
   const [campaignDiscount, setCampaignDiscount] = useState(0);
   const [pointsToRedeem, setPointsToRedeem] = useState('');
   const [discountCode, setDiscountCode] = useState('');
+  const [exchangeCredit, setExchangeCredit] = useState(0);
 
   const getTotal = () => {
     const total = cart.reduce((total, item) => total + item.price * item.quantity, 0);
     const totalDiscount = discount + loyaltyDiscount + campaignDiscount;
-    const finalTotal = total - totalDiscount;
-    return finalTotal > 0 ? finalTotal : 0;
+    const finalTotal = total - totalDiscount - exchangeCredit;
+    return finalTotal; // Can be negative now
   };
 
   const handleDiscount = (e) => {
@@ -313,9 +322,14 @@ const POS = () => {
                     {__('Apply', 'fendi-inventory-system')}
                 </button>
             </div>
-          <h3 className="text-lg font-bold">{__('Total:', 'fendi-inventory-system')} {getTotal()}</h3>
+          {exchangeCredit > 0 && (
+            <div className="text-lg font-bold text-green-600">
+                {__('Exchange Credit:', 'fendi-inventory-system')} -{exchangeCredit}
+            </div>
+          )}
+          <h3 className="text-xl font-bold mt-2">{__('Net Total:', 'fendi-inventory-system')} {getTotal()}</h3>
           <button
-            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-4"
+            className="bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-6 rounded mt-4 w-full text-lg"
             onClick={handlePay}
           >
             {__('Pay', 'fendi-inventory-system')}

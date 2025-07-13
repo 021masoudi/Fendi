@@ -473,6 +473,18 @@ class Fendi_Inventory_System_Api {
 			'callback' => array( $this, 'get_time_logs' ),
 			'permission_callback' => array( $this, 'manage_options_permission_check' ),
 		) );
+
+		register_rest_route( 'fendi/v1', '/orders/(?P<id>\\d+)/return', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'process_order_return' ),
+			'permission_callback' => array( $this, 'create_order_permissions_check' ),
+		) );
+
+		register_rest_route( 'fendi/v1', '/orders/(?P<id>\\d+)', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'get_order' ),
+			'permission_callback' => array( $this, 'create_order_permissions_check' ),
+		) );
 	}
 
 	/**
@@ -599,6 +611,81 @@ class Fendi_Inventory_System_Api {
 
 		$campaign->meta = get_post_meta( $campaign->ID );
 		return new WP_REST_Response( $campaign, 200 );
+	}
+
+	public function get_order( WP_REST_Request $request ) {
+		$order = wc_get_order( $request['id'] );
+		if ( ! $order ) {
+			return new WP_Error( 'not_found', __( 'Order not found.', 'fendi-inventory-system' ), array( 'status' => 404 ) );
+		}
+		return new WP_REST_Response( $order->get_data(), 200 );
+	}
+
+	public function process_order_return( WP_REST_Request $request ) {
+		$order_id = $request['id'];
+		$original_order = wc_get_order( $order_id );
+		if ( ! $original_order ) {
+			return new WP_Error( 'not_found', __( 'Original order not found.', 'fendi-inventory-system' ), array( 'status' => 404 ) );
+		}
+
+		$params = $request->get_json_params();
+		$returned_items = $params['items'];
+		$warehouse_id = get_post_meta($order_id, '_warehouse_id', true); // Assuming warehouse is stored in order meta
+
+		$refund_amount = 0;
+		$line_items_to_refund = array();
+
+		foreach ( $original_order->get_items() as $item_id => $item ) {
+			if ( isset( $returned_items[ $item->get_product_id() ] ) ) {
+				$qty_to_return = $returned_items[ $item->get_product_id() ];
+				if ( $qty_to_return > $item->get_quantity() ) {
+					return new WP_Error( 'invalid_quantity', __( 'Cannot return more items than purchased.', 'fendi-inventory-system' ), array( 'status' => 400 ) );
+				}
+
+				// Restore stock
+				if ($warehouse_id) {
+					$current_stock = (int) get_post_meta( $item->get_product_id(), '_stock_warehouse_' . $warehouse_id, true );
+					update_post_meta( $item->get_product_id(), '_stock_warehouse_' . $warehouse_id, $current_stock + $qty_to_return );
+				}
+
+				// Prepare for refund
+				$refund_amount += ( $item->get_total() / $item->get_quantity() ) * $qty_to_return;
+				$line_items_to_refund[ $item_id ] = array(
+					'qty' => $qty_to_return,
+					'refund_total' => ( $item->get_total() / $item->get_quantity() ) * $qty_to_return,
+				);
+			}
+		}
+
+		if ( $refund_amount > 0 ) {
+			// Create the refund
+			$refund = wc_create_refund( array(
+				'amount'         => $refund_amount,
+				'reason'         => __( 'Customer return', 'fendi-inventory-system' ),
+				'order_id'       => $order_id,
+				'line_items'     => $line_items_to_refund,
+				'refund_payment' => false, // We handle payment manually in POS
+			) );
+
+			if ( is_wp_error( $refund ) ) {
+				return $refund;
+			}
+
+			// Deduct loyalty points
+			$customer_id = $original_order->get_customer_id();
+			$rate = get_option( 'fendi_loyalty_points_rate', 1000 );
+			if ( $customer_id && $rate > 0 ) {
+				$points_to_deduct = floor( $refund_amount / $rate );
+				if ( $points_to_deduct > 0 ) {
+					$current_points = (int) get_user_meta( $customer_id, '_loyalty_points', true );
+					update_user_meta( $customer_id, '_loyalty_points', $current_points - $points_to_deduct );
+				}
+			}
+
+			return new WP_REST_Response( array( 'success' => true, 'refund_id' => $refund->get_id(), 'amount' => $refund_amount ), 200 );
+		}
+
+		return new WP_Error( 'no_items', __( 'No items were specified for return.', 'fendi-inventory-system' ), array( 'status' => 400 ) );
 	}
 
 	public function get_last_time_log( WP_REST_Request $request ) {
