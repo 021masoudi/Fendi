@@ -78,7 +78,75 @@ class Fendi_Inventory_System {
 		$this->set_locale();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
+		$this->define_activation_hooks();
 
+	}
+
+	/**
+	 * Define the activation and deactivation hooks.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 */
+	private function define_activation_hooks() {
+		register_activation_hook( FENDI_INVENTORY_SYSTEM_FILE, array( $this, 'activate' ) );
+		register_deactivation_hook( FENDI_INVENTORY_SYSTEM_FILE, array( $this, 'deactivate' ) );
+	}
+
+	/**
+	 * The code that runs during plugin activation.
+	 *
+	 * @since    1.0.0
+	 */
+	public function activate() {
+		$this->add_roles();
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * The code that runs during plugin deactivation.
+	 *
+	 * @since    1.0.0
+	 */
+	public function deactivate() {
+		$this->remove_roles();
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * Add custom user roles.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 */
+	private function add_roles() {
+		add_role(
+			'warehouse_manager',
+			__( 'Warehouse Manager', 'fendi-inventory-system' ),
+			array(
+				'read'         => true,
+				'edit_posts'   => true,
+				'delete_posts' => true,
+			)
+		);
+		add_role(
+			'cashier',
+			__( 'Cashier', 'fendi-inventory-system' ),
+			array(
+				'read' => true,
+			)
+		);
+	}
+
+	/**
+	 * Remove custom user roles.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 */
+	private function remove_roles() {
+		remove_role( 'warehouse_manager' );
+		remove_role( 'cashier' );
 	}
 
 	/**
@@ -167,6 +235,10 @@ class Fendi_Inventory_System {
 		$this->loader->add_action( 'init', $this, 'register_post_types' );
 		$this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'add_warehouse_inventory_metabox' );
 		$this->loader->add_action( 'save_post_product', $plugin_admin, 'save_warehouse_inventory_metabox' );
+		$this->loader->add_action( 'show_user_profile', $plugin_admin, 'render_user_warehouse_field' );
+		$this->loader->add_action( 'edit_user_profile', $plugin_admin, 'render_user_warehouse_field' );
+		$this->loader->add_action( 'personal_options_update', $plugin_admin, 'save_user_warehouse_field' );
+		$this->loader->add_action( 'edit_user_profile_update', $plugin_admin, 'save_user_warehouse_field' );
 
 	}
 

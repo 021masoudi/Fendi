@@ -223,4 +223,75 @@ class Fendi_Inventory_System_Admin {
 			}
 		}
 	}
+
+	/**
+	 * Render the user warehouse field.
+	 *
+	 * @since    1.0.0
+	 */
+	public function render_user_warehouse_field( $user ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		if ( ! in_array( 'cashier', $user->roles, true ) && ! in_array( 'warehouse_manager', $user->roles, true ) ) {
+			return;
+		}
+
+		wp_nonce_field( 'fendi_user_warehouse_data', 'fendi_user_warehouse_nonce' );
+
+		$warehouses = get_posts(
+			array(
+				'post_type'      => 'warehouse',
+				'posts_per_page' => -1,
+			)
+		);
+
+		$assigned_warehouse = get_user_meta( $user->ID, '_assigned_warehouse', true );
+		?>
+		<h3><?php esc_html_e( 'Warehouse Assignment', 'fendi-inventory-system' ); ?></h3>
+		<table class="form-table">
+			<tr>
+				<th>
+					<label for="fendi_assigned_warehouse">
+						<?php esc_html_e( 'Assigned Warehouse', 'fendi-inventory-system' ); ?>
+					</label>
+				</th>
+				<td>
+					<select name="fendi_assigned_warehouse" id="fendi_assigned_warehouse">
+						<option value=""><?php esc_html_e( 'Select a warehouse', 'fendi-inventory-system' ); ?></option>
+						<?php foreach ( $warehouses as $warehouse ) : ?>
+							<option value="<?php echo esc_attr( $warehouse->ID ); ?>" <?php selected( $assigned_warehouse, $warehouse->ID ); ?>>
+								<?php echo esc_html( $warehouse->post_title ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+				</td>
+			</tr>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Save the user warehouse field.
+	 *
+	 * @since    1.0.0
+	 */
+	public function save_user_warehouse_field( $user_id ) {
+		if ( ! isset( $_POST['fendi_user_warehouse_nonce'] ) ) {
+			return;
+		}
+
+		if ( ! wp_verify_nonce( $_POST['fendi_user_warehouse_nonce'], 'fendi_user_warehouse_data' ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'edit_user', $user_id ) ) {
+			return;
+		}
+
+		if ( isset( $_POST['fendi_assigned_warehouse'] ) ) {
+			update_user_meta( $user_id, '_assigned_warehouse', sanitize_text_field( $_POST['fendi_assigned_warehouse'] ) );
+		}
+	}
 }

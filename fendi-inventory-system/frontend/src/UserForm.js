@@ -72,10 +72,8 @@ const UserForm = ({ user, onSubmit, onCancel }) => {
           value={role}
           onChange={(e) => setRole(e.target.value)}
         >
-          <option value="subscriber">{__('Subscriber', 'fendi-inventory-system')}</option>
-          <option value="contributor">{__('Contributor', 'fendi-inventory-system')}</option>
-          <option value="author">{__('Author', 'fendi-inventory-system')}</option>
-          <option value="editor">{__('Editor', 'fendi-inventory-system')}</option>
+          <option value="cashier">{__('Cashier', 'fendi-inventory-system')}</option>
+          <option value="warehouse_manager">{__('Warehouse Manager', 'fendi-inventory-system')}</option>
           <option value="administrator">{__('Administrator', 'fendi-inventory-system')}</option>
         </select>
       </div>

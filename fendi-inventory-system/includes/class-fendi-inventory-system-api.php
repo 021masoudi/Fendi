@@ -193,7 +193,18 @@ class Fendi_Inventory_System_Api {
 	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
 	 */
 	public function get_users( $request ) {
-		$users = get_users();
+		$current_user = wp_get_current_user();
+		$args = array();
+
+		if ( in_array( 'warehouse_manager', $current_user->roles, true ) ) {
+			$assigned_warehouse = get_user_meta( $current_user->ID, '_assigned_warehouse', true );
+			if ( $assigned_warehouse ) {
+				$args['meta_key'] = '_assigned_warehouse';
+				$args['meta_value'] = $assigned_warehouse;
+			}
+		}
+
+		$users = get_users( $args );
 		foreach ( $users as $user ) {
 			$user->meta = get_user_meta( $user->ID );
 		}
@@ -482,12 +493,21 @@ class Fendi_Inventory_System_Api {
 			)
 		);
 
+		$current_user = wp_get_current_user();
+		$assigned_warehouse = get_user_meta( $current_user->ID, '_assigned_warehouse', true );
+
 		foreach ( $products as $product ) {
 			$product_data = $product->get_data();
 			$product_data['warehouse_stock'] = array();
-			foreach ( $warehouses as $warehouse ) {
-				$stock = get_post_meta( $product->get_id(), '_stock_warehouse_' . $warehouse->ID, true );
-				$product_data['warehouse_stock'][ $warehouse->ID ] = $stock;
+
+			if ( ( in_array( 'cashier', $current_user->roles, true ) || in_array( 'warehouse_manager', $current_user->roles, true ) ) && $assigned_warehouse ) {
+				$stock = get_post_meta( $product->get_id(), '_stock_warehouse_' . $assigned_warehouse, true );
+				$product_data['warehouse_stock'][ $assigned_warehouse ] = $stock;
+			} else {
+				foreach ( $warehouses as $warehouse ) {
+					$stock = get_post_meta( $product->get_id(), '_stock_warehouse_' . $warehouse->ID, true );
+					$product_data['warehouse_stock'][ $warehouse->ID ] = $stock;
+				}
 			}
 			$product->set_props( $product_data );
 		}
@@ -563,6 +583,7 @@ class Fendi_Inventory_System_Api {
 			return new WP_Error( 'not_logged_in', __( 'You are not logged in.', 'fendi-inventory-system' ), array( 'status' => 401 ) );
 		}
 		$user->meta = get_user_meta( $user->ID );
+		$user->meta['_assigned_warehouse'] = get_user_meta( $user->ID, '_assigned_warehouse', true );
 		return new WP_REST_Response( $user, 200 );
 	}
 
