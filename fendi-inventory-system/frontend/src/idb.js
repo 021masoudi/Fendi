@@ -5,6 +5,9 @@ const dbPromise = openDB('fendi-inventory-db', 1, {
     if (!db.objectStoreNames.contains('sales')) {
       db.createObjectStore('sales', { keyPath: 'id', autoIncrement: true });
     }
+    if (!db.objectStoreNames.contains('products')) {
+      db.createObjectStore('products', { keyPath: 'id' });
+    }
     if (!db.objectStoreNames.contains('inventory')) {
       db.createObjectStore('inventory', { keyPath: 'id', autoIncrement: true });
     }

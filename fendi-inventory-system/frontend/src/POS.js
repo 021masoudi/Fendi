@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
-import api from './api';
+import * as api from './api';
 import Modal from './Modal';
 import PaymentForm from './PaymentForm';
 import Receipt from './Receipt';
@@ -10,27 +10,87 @@ const POS = () => {
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [search, setSearch] = useState('');
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
-  const [receipt, setReceipt] = useState(null);
+  const [customer, setCustomer] = useState(null);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [order, setOrder] = useState(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [warehouses, setWarehouses] = useState([]);
   const [selectedWarehouse, setSelectedWarehouse] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [receipt, setReceipt] = useState(null);
 
   useEffect(() => {
-    api.getMe().then((response) => {
-      setCurrentUser(response.data);
-      if (response.data.meta._assigned_warehouse) {
-        setSelectedWarehouse(response.data.meta._assigned_warehouse[0]);
+    const handleOnline = () => {
+      setIsOnline(true);
+      // Sync offline data when online
+      idb.getAll('sales').then(sales => {
+        sales.forEach(sale => {
+          api.createOrder(sale).then(() => {
+            idb.delete('sales', sale.id);
+          });
+        });
+      });
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isOnline) {
+      api.getMe().then((response) => {
+        setCurrentUser(response.data);
+        if (response.data.meta._assigned_warehouse) {
+          setSelectedWarehouse(response.data.meta._assigned_warehouse[0]);
+        }
+      });
+      api.getProducts(search).then((response) => {
+        setProducts(response.data);
+        idb.clear('products').then(() => {
+          response.data.forEach(product => {
+            idb.put('products', product);
+          });
+        });
+      });
+      api.getWarehouses().then((response) => {
+        setWarehouses(response.data);
+      });
+    } else {
+      idb.getAll('products').then(products => {
+        setProducts(products);
+      });
+    }
+  }, [isOnline, search]);
+
+  const [barcode, setBarcode] = useState('');
+
+  useEffect(() => {
+    const handleBarcodeScan = (e) => {
+      if (e.key === 'Enter') {
+        const product = products.find(p => p.sku === barcode);
+        if (product) {
+          addToCart(product);
+        }
+        setBarcode('');
+      } else {
+        setBarcode(barcode + e.key);
       }
-    });
-    api.getProducts(search).then((response) => {
-      setProducts(response.data);
-    });
-    api.getWarehouses().then((response) => {
-      setWarehouses(response.data);
-    });
-  }, [search]);
+    };
+
+    window.addEventListener('keypress', handleBarcodeScan);
+
+    return () => {
+      window.removeEventListener('keypress', handleBarcodeScan);
+    };
+  }, [barcode, products]);
 
   const handleSearch = (e) => {
     setSearch(e.target.value);
@@ -62,8 +122,20 @@ const POS = () => {
     }
   };
 
+  const [discount, setDiscount] = useState(0);
+
   const getTotal = () => {
-    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    const total = cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    return total - discount;
+  };
+
+  const handleDiscount = (e) => {
+    const newDiscount = parseFloat(e.target.value);
+    if (newDiscount > (currentUser.meta._discount_cap || 0)) {
+      alert(__('Discount exceeds the maximum allowed cap.', 'fendi-inventory-system'));
+      return;
+    }
+    setDiscount(newDiscount);
   };
 
   const handlePay = () => {
@@ -112,47 +184,44 @@ const POS = () => {
             >
               <h3 className="font-bold">{product.name}</h3>
               <p>{product.price}</p>
-              <div>
-                {Object.entries(product.warehouse_stock).map(([warehouseId, stock]) => (
-                  <p key={warehouseId}>
-                    Warehouse {warehouseId}: {stock}
-                  </p>
-                ))}
-              </div>
             </div>
           ))}
         </div>
       </div>
       <div>
         <h2 className="text-xl font-bold mb-4">{__('Cart', 'fendi-inventory-system')}</h2>
-        <table className="table-auto w-full">
-          <thead>
-            <tr>
-              <th className="px-4 py-2">{__('Product', 'fendi-inventory-system')}</th>
-              <th className="px-4 py-2">{__('Price', 'fendi-inventory-system')}</th>
-              <th className="px-4 py-2">{__('Quantity', 'fendi-inventory-system')}</th>
-              <th className="px-4 py-2">{__('Actions', 'fendi-inventory-system')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cart.map((item) => (
-              <tr key={item.id}>
-                <td className="border px-4 py-2">{item.name}</td>
-                <td className="border px-4 py-2">{item.price}</td>
-                <td className="border px-4 py-2">{item.quantity}</td>
-                <td className="border px-4 py-2">
-                  <button
-                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded"
-                    onClick={() => removeFromCart(item)}
-                  >
-                    {__('Remove', 'fendi-inventory-system')}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ul>
+          {cart.map((item) => (
+            <li key={item.id} className="flex justify-between items-center mb-2">
+              <div>
+                <h3 className="font-bold">{item.name}</h3>
+                <p>
+                  {item.quantity} x {item.price}
+                </p>
+              </div>
+              <button
+                onClick={() => removeFromCart(item)}
+                className="text-red-500 hover:text-red-800"
+              >
+                {__('Remove', 'fendi-inventory-system')}
+              </button>
+            </li>
+          ))}
+        </ul>
         <div className="mt-4">
+          <div className="flex items-center mb-4">
+            <label className="block text-gray-700 text-sm font-bold mr-2" htmlFor="discount">
+              {__('Discount', 'fendi-inventory-system')}
+            </label>
+            <input
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="discount"
+              type="number"
+              value={discount}
+              onChange={handleDiscount}
+              disabled={!currentUser || (!currentUser.roles.includes('administrator') && !currentUser.meta._can_give_discount)}
+            />
+          </div>
           <h3 className="text-lg font-bold">{__('Total:', 'fendi-inventory-system')} {getTotal()}</h3>
           <button
             className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-4"

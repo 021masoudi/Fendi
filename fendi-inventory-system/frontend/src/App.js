@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
 import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { idb } from './idb';
+import * as api from './api';
 import UserManagement from './UserManagement';
 import WarehouseManagement from './WarehouseManagement';
 import POS from './POS';
@@ -14,13 +16,28 @@ import ExpenseManagement from './ExpenseManagement';
 import TransactionManagement from './TransactionManagement';
 import Ledger from './Ledger';
 import BalanceSheet from './BalanceSheet';
+import CashDrawerManagement from './CashDrawerManagement';
+import BarcodeManagement from './BarcodeManagement';
+import InventoryCount from './InventoryCount';
+import AccountsReceivable from './AccountsReceivable';
+import AccountsPayable from './AccountsPayable';
 
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
+    const handleOnline = () => {
+      setIsOnline(true);
+      // Sync offline data when online
+      idb.getAll('sales').then(sales => {
+        sales.forEach(sale => {
+          api.createOrder(sale).then(() => {
+            idb.delete('sales', sale.id);
+          });
+        });
+      });
+    };
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
@@ -83,6 +100,16 @@ const App = () => {
                 <Link to="/stock-requests" className="text-blue-500 hover:text-blue-800">{__('Stock Requests', 'fendi-inventory-system')}</Link>
               </li>
             )}
+            {canAccess('warehouse_manager') && (
+              <li className="mr-6">
+                <Link to="/barcode" className="text-blue-500 hover:text-blue-800">{__('Barcode Management', 'fendi-inventory-system')}</Link>
+              </li>
+            )}
+            {canAccess('warehouse_manager') && (
+              <li className="mr-6">
+                <Link to="/inventory-count" className="text-blue-500 hover:text-blue-800">{__('Inventory Count', 'fendi-inventory-system')}</Link>
+              </li>
+            )}
             {canAccess('accountant') && (
               <>
                 <li className="mr-6">
@@ -106,7 +133,18 @@ const App = () => {
                 <li className="mr-6">
                   <Link to="/balance-sheet" className="text-blue-500 hover:text-blue-800">{__('Balance Sheet', 'fendi-inventory-system')}</Link>
                 </li>
+                <li className="mr-6">
+                  <Link to="/accounts-receivable" className="text-blue-500 hover:text-blue-800">{__('Accounts Receivable', 'fendi-inventory-system')}</Link>
+                </li>
+                <li className="mr-6">
+                  <Link to="/accounts-payable" className="text-blue-500 hover:text-blue-800">{__('Accounts Payable', 'fendi-inventory-system')}</Link>
+                </li>
               </>
+            )}
+            {canAccess('cashier') && (
+              <li className="mr-6">
+                <Link to="/cash-drawer" className="text-blue-500 hover:text-blue-800">{__('Cash Drawer', 'fendi-inventory-system')}</Link>
+              </li>
             )}
             {canAccess('administrator') && (
               <li className="mr-6">
@@ -130,8 +168,13 @@ const App = () => {
               <Route path="/transactions" element={<TransactionManagement />} />
               <Route path="/ledger" element={<Ledger />} />
               <Route path="/balance-sheet" element={<BalanceSheet />} />
+              <Route path="/accounts-receivable" element={<AccountsReceivable />} />
+              <Route path="/accounts-payable" element={<AccountsPayable />} />
             </>
           )}
+          {canAccess('warehouse_manager') && <Route path="/barcode" element={<BarcodeManagement />} />}
+          {canAccess('warehouse_manager') && <Route path="/inventory-count" element={<InventoryCount />} />}
+          {canAccess('cashier') && <Route path="/cash-drawer" element={<CashDrawerManagement />} />}
           {canAccess('administrator') && <Route path="/notifications" element={<Notifications />} />}
         </Routes>
       </div>

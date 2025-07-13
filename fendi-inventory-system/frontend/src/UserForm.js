@@ -9,6 +9,8 @@ const UserForm = ({ user, onSubmit, onCancel }) => {
   const [role, setRole] = useState(user ? user.roles[0] : 'subscriber');
   const [assignedWarehouse, setAssignedWarehouse] = useState(user ? user.meta._assigned_warehouse : '');
   const [warehouses, setWarehouses] = useState([]);
+  const [discountCap, setDiscountCap] = useState(user ? user.meta._discount_cap : '');
+  const [canGiveDiscount, setCanGiveDiscount] = useState(user ? user.meta._can_give_discount : false);
 
   useEffect(() => {
     api.getWarehouses().then((response) => {
@@ -18,7 +20,7 @@ const UserForm = ({ user, onSubmit, onCancel }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({ username, email, password, role, meta: { _assigned_warehouse: assignedWarehouse } });
+    onSubmit({ username, email, password, role, meta: { _assigned_warehouse: assignedWarehouse, _discount_cap: discountCap, _can_give_discount: canGiveDiscount } });
   };
 
   return (
@@ -94,6 +96,29 @@ const UserForm = ({ user, onSubmit, onCancel }) => {
             </option>
           ))}
         </select>
+      </div>
+      <div className="mb-4">
+        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="discount-cap">
+          {__('Discount Cap', 'fendi-inventory-system')}
+        </label>
+        <input
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          id="discount-cap"
+          type="number"
+          value={discountCap}
+          onChange={(e) => setDiscountCap(e.target.value)}
+        />
+      </div>
+      <div className="mb-4">
+        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="can-give-discount">
+          {__('Can Give Discount', 'fendi-inventory-system')}
+        </label>
+        <input
+          id="can-give-discount"
+          type="checkbox"
+          checked={canGiveDiscount}
+          onChange={(e) => setCanGiveDiscount(e.target.checked)}
+        />
       </div>
       <div className="flex items-center justify-between">
         <button
