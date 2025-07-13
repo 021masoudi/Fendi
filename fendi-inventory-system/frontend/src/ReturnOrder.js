@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
 import * as api from './api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const ReturnOrder = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [orderId, setOrderId] = useState('');
     const [order, setOrder] = useState(null);
     const [returnedItems, setReturnedItems] = useState({});
@@ -12,8 +13,16 @@ const ReturnOrder = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    const handleSearchOrder = async () => {
-        if (!orderId) return;
+    useEffect(() => {
+        if (location.state && location.state.orderId) {
+            setOrderId(location.state.orderId);
+            handleSearchOrder(location.state.orderId);
+        }
+    }, [location]);
+
+    const handleSearchOrder = async (idToSearch) => {
+        const finalOrderId = idToSearch || orderId;
+        if (!finalOrderId) return;
         setIsLoading(true);
         setError('');
         setSuccess('');
@@ -84,16 +93,18 @@ const ReturnOrder = () => {
 
             <div className="bg-white p-8 rounded-lg shadow-md mb-6">
                 <div className="flex items-center space-x-4">
-                    <input
-                        type="text"
-                        value={orderId}
-                        onChange={e => setOrderId(e.target.value)}
-                        placeholder={__('Enter Order ID', 'fendi-inventory-system')}
-                        className="flex-grow shadow-sm sm:text-sm border-gray-300 rounded-md"
-                    />
-                    <button onClick={handleSearchOrder} disabled={isLoading} className="bg-blue-600 text-white px-6 py-2 rounded-md">
-                        {isLoading ? __('Searching...', 'fendi-inventory-system') : __('Search Order', 'fendi-inventory-system')}
-                    </button>
+                    <form onSubmit={(e) => { e.preventDefault(); handleSearchOrder(); }} className="flex items-center space-x-4">
+                        <input
+                            type="text"
+                            value={orderId}
+                            onChange={e => setOrderId(e.target.value)}
+                            placeholder={__('Enter Order ID', 'fendi-inventory-system')}
+                            className="flex-grow shadow-sm sm:text-sm border-gray-300 rounded-md"
+                        />
+                        <button type="submit" disabled={isLoading} className="bg-blue-600 text-white px-6 py-2 rounded-md">
+                            {isLoading ? __('Searching...', 'fendi-inventory-system') : __('Search Order', 'fendi-inventory-system')}
+                        </button>
+                    </form>
                 </div>
                 {error && <p className="text-red-500 mt-2">{error}</p>}
                 {success && <p className="text-green-500 mt-2">{success}</p>}

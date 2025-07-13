@@ -4,6 +4,7 @@ import * as api from './api';
 import Modal from './Modal';
 import PaymentForm from './PaymentForm';
 import Receipt from './Receipt';
+import CustomerHistory from './CustomerHistory';
 import { idb } from './idb';
 import { useLocation } from 'react-router-dom';
 
@@ -21,6 +22,7 @@ const POS = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [receipt, setReceipt] = useState(null);
 
   useEffect(() => {
@@ -202,8 +204,15 @@ const POS = () => {
          {/* For now, we assume a customer is selected and their data is in `customer` state */}
          {customer && (
             <div className="p-4 mb-4 bg-blue-100 border border-blue-400 rounded">
-                <h3 className="font-bold text-blue-800">{__('Selected Customer:', 'fendi-inventory-system')} {customer.name}</h3>
-                <p className="text-blue-700">{__('Loyalty Points:', 'fendi-inventory-system')} {customer.loyalty_points || 0}</p>
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h3 className="font-bold text-blue-800">{__('Selected Customer:', 'fendi-inventory-system')} {customer.name}</h3>
+                        <p className="text-blue-700">{__('Loyalty Points:', 'fendi-inventory-system')} {customer.loyalty_points || 0}</p>
+                    </div>
+                    <button onClick={() => setIsHistoryModalOpen(true)} className="text-sm text-blue-500 hover:underline">
+                        {__('View History', 'fendi-inventory-system')}
+                    </button>
+                </div>
             </div>
          )}
         <div className="flex justify-between items-center mb-4">
@@ -375,6 +384,11 @@ const POS = () => {
           >
             {__('Print Receipt', 'fendi-inventory-system')}
           </button>
+        </Modal>
+      )}
+      {isHistoryModalOpen && customer && (
+        <Modal onClose={() => setIsHistoryModalOpen(false)} size="large">
+            <CustomerHistory customerId={customer.id} />
         </Modal>
       )}
     </div>
