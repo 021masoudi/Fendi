@@ -38,6 +38,8 @@ const FinancialReports = () => {
                     <p>{__('Total Revenue:', 'fendi-inventory-system')} {reports.total_revenue}</p>
                     <p>{__('Total COGS:', 'fendi-inventory-system')} {reports.total_cogs}</p>
                     <p>{__('Gross Profit:', 'fendi-inventory-system')} {reports.gross_profit}</p>
+                    <p>{__('Total Expenses:', 'fendi-inventory-system')} {reports.total_expenses}</p>
+                    <p>{__('Net Profit:', 'fendi-inventory-system')} {reports.net_profit}</p>
                 </div>
             )}
         </div>

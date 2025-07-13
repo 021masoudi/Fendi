@@ -23,6 +23,19 @@ export const getProducts = (search = '') => api.get(`/products?s=${search}`);
 
 export const getNotifications = () => api.get('/notifications');
 
+export const getExpenses = () => api.get('/expenses');
+export const createExpense = (data) => api.post('/expenses', data);
+export const updateExpense = (id, data) => api.put(`/expenses/${id}`, data);
+export const deleteExpense = (id) => api.delete(`/expenses/${id}`);
+
+export const getTransactions = () => api.get('/transactions');
+export const createTransaction = (data) => api.post('/transactions', data);
+export const updateTransaction = (id, data) => api.put(`/transactions/${id}`, data);
+export const deleteTransaction = (id) => api.delete(`/transactions/${id}`);
+
+export const getLedger = (account) => api.get(`/ledger/${account}`);
+export const getBalanceSheet = () => api.get('/balance-sheet');
+
 export default {
   getUsers() {
     return api.get('/users');

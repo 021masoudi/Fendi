@@ -196,6 +196,8 @@ class Fendi_Inventory_System {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-supplier.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-purchase-order.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-settings.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-expense.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-transaction.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing
