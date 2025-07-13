@@ -21,28 +21,82 @@ class Fendi_Inventory_System_Notifications {
     }
 
     public function check_low_stock() {
-        $threshold = get_option('fendi_low_stock_threshold', 10);
+        $warehouses = get_posts(
+            array(
+                'post_type'      => 'warehouse',
+                'posts_per_page' => -1,
+                'post_status'    => 'publish',
+            )
+        );
+
+        if (empty($warehouses)) {
+            return;
+        }
+
         $products = wc_get_products(array('status' => 'publish', 'limit' => -1));
+
         foreach ($products as $product) {
-            if ($product->get_stock_quantity() < $threshold) {
-                $this->create_notification(
-                    __('Low Stock Alert', 'fendi-inventory-system'),
-                    sprintf(__('Product %s is low on stock.', 'fendi-inventory-system'), $product->get_name())
-                );
+            $product_id = $product->get_id();
+
+            foreach ($warehouses as $warehouse) {
+                $warehouse_id = $warehouse->ID;
+                $warehouse_name = $warehouse->post_title;
+
+                $stock = get_post_meta($product_id, '_stock_warehouse_' . $warehouse_id, true);
+                $threshold = get_post_meta($product_id, '_low_stock_threshold_warehouse_' . $warehouse_id, true);
+
+                // If threshold is not set, use a default or skip
+                if ($threshold === '') {
+                    $threshold = 10; // Default threshold
+                }
+
+                if (is_numeric($stock) && is_numeric($threshold) && (int)$stock < (int)$threshold) {
+                    $this->create_notification(
+                        __('Low Stock Alert', 'fendi-inventory-system'),
+                        sprintf(
+                            __('Product "%s" is low on stock in warehouse "%s". Current stock: %d, Threshold: %d.', 'fendi-inventory-system'),
+                            $product->get_name(),
+                            $warehouse_name,
+                            $stock,
+                            $threshold
+                        ),
+                        '_low_stock_alert_' . $product_id . '_' . $warehouse_id,
+                        'active'
+                    );
+                }
             }
         }
     }
 
     public function check_high_sales() {
-        $threshold = get_option('fendi_high_sales_threshold', 100);
-        $period = get_option('fendi_high_sales_period', 24);
         $products = wc_get_products(array('status' => 'publish', 'limit' => -1));
+
         foreach ($products as $product) {
-            $sales = $this->get_sales_in_period($product->get_id(), $period);
+            $product_id = $product->get_id();
+            $threshold = get_post_meta($product_id, '_high_sales_threshold', true);
+            $period = get_post_meta($product_id, '_high_sales_period', true);
+
+            // Use default values if not set
+            if (empty($threshold)) {
+                $threshold = 100; // Default threshold
+            }
+            if (empty($period)) {
+                $period = 24; // Default period in hours
+            }
+
+            $sales = $this->get_sales_in_period($product_id, $period);
+
             if ($sales > $threshold) {
                 $this->create_notification(
                     __('High Sales Alert', 'fendi-inventory-system'),
-                    sprintf(__('Product %s has high sales.', 'fendi-inventory-system'), $product->get_name())
+                    sprintf(
+                        __('Product "%s" has high sales. Sold %d units in the last %d hours.', 'fendi-inventory-system'),
+                        $product->get_name(),
+                        $sales,
+                        $period
+                    ),
+                    '_high_sales_alert_' . $product_id,
+                    date('Y-m-d') // Store the date to prevent daily duplicates
                 );
             }
         }
@@ -74,13 +128,43 @@ class Fendi_Inventory_System_Notifications {
         }
     }
 
-    private function create_notification($title, $content) {
-        wp_insert_post(array(
+    private function create_notification($title, $content, $meta_key = '', $meta_value = '') {
+        // Check if a similar notification already exists
+        $args = array(
+            'post_type' => 'notification',
+            'post_status' => 'publish',
+            'posts_per_page' => 1,
+            'title' => $title,
+        );
+
+        if (!empty($meta_key) && !empty($meta_value)) {
+            $args['meta_query'] = array(
+                array(
+                    'key' => $meta_key,
+                    'value' => $meta_value,
+                )
+            );
+        }
+
+        $existing_notifications = new WP_Query($args);
+
+        if ($existing_notifications->have_posts()) {
+            // A similar notification already exists, don't create a new one.
+            return;
+        }
+
+        $post_data = array(
             'post_type' => 'notification',
             'post_title' => $title,
             'post_content' => $content,
             'post_status' => 'publish',
-        ));
+        );
+
+        $post_id = wp_insert_post($post_data);
+
+        if ($post_id && !empty($meta_key) && !empty($meta_value)) {
+            add_post_meta($post_id, $meta_key, $meta_value);
+        }
     }
 
     private function get_sales_in_period($product_id, $hours) {

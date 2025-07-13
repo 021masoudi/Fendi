@@ -374,6 +374,92 @@ class Fendi_Inventory_System_Api {
 				'permission_callback' => array( $this, 'get_balance_sheet_permissions_check' ),
 			)
 		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/settings/sms',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_sms_settings' ),
+				'permission_callback' => array( $this, 'manage_options_permission_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/settings/sms',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'save_sms_settings' ),
+				'permission_callback' => array( $this, 'manage_options_permission_check' ),
+			)
+		);
+	}
+
+	/**
+	 * Check if the current user has manage_options capability.
+	 *
+	 * @return bool
+	 */
+	public function manage_options_permission_check() {
+		return current_user_can( 'manage_options' );
+	}
+
+	/**
+	 * Get SMS settings.
+	 *
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response
+	 */
+	public function get_sms_settings( WP_REST_Request $request ) {
+		$settings = array(
+			'fendi_sms_api_key'                     => get_option( 'fendi_sms_api_key', '' ),
+			'fendi_sms_sender_number'               => get_option( 'fendi_sms_sender_number', '' ),
+			'fendi_sms_api_url'                     => get_option( 'fendi_sms_api_url', '' ),
+			'fendi_thank_you_sms_enabled'           => (bool) get_option( 'fendi_thank_you_sms_enabled', false ),
+			'fendi_thank_you_sms_template'          => get_option( 'fendi_thank_you_sms_template', '' ),
+			'fendi_daily_sales_report_enabled'      => (bool) get_option( 'fendi_daily_sales_report_enabled', false ),
+			'fendi_daily_sales_report_recipients' => get_option( 'fendi_daily_sales_report_recipients', '' ),
+			'fendi_daily_sales_report_time'         => get_option( 'fendi_daily_sales_report_time', '23:00' ),
+		);
+		return new WP_REST_Response( $settings, 200 );
+	}
+
+	/**
+	 * Save SMS settings.
+	 *
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response
+	 */
+	public function save_sms_settings( WP_REST_Request $request ) {
+		$params = $request->get_json_params();
+		$old_time = get_option('fendi_daily_sales_report_time');
+
+		foreach ( $params as $key => $value ) {
+			if ( strpos( $key, 'fendi_' ) === 0 ) {
+				// Sanitize based on the expected type
+				if ( is_bool( $value ) ) {
+					update_option( $key, $value );
+				} elseif ( $key === 'fendi_thank_you_sms_template' ) {
+					update_option( $key, sanitize_textarea_field( $value ) );
+				} else {
+					update_option( $key, sanitize_text_field( $value ) );
+				}
+			}
+		}
+
+		$new_time = $params['fendi_daily_sales_report_time'];
+
+		// Reschedule the cron event if the time has changed
+		if ( $old_time !== $new_time ) {
+			$timestamp = wp_next_scheduled( 'fendi_send_daily_sales_report' );
+			if ( $timestamp ) {
+				wp_unschedule_event( $timestamp, 'fendi_send_daily_sales_report' );
+			}
+			wp_schedule_event( strtotime( $new_time ), 'daily', 'fendi_send_daily_sales_report' );
+		}
+
+		return new WP_REST_Response( array( 'success' => true ), 200 );
 	}
 
 	/**

@@ -169,21 +169,70 @@ class Fendi_Inventory_System_Admin {
 
 		foreach ( $warehouses as $warehouse ) {
 			$stock = get_post_meta( $post->ID, '_stock_warehouse_' . $warehouse->ID, true );
+			$threshold = get_post_meta( $post->ID, '_low_stock_threshold_warehouse_' . $warehouse->ID, true );
 			?>
-			<p>
-				<label for="fendi_warehouse_<?php echo esc_attr( $warehouse->ID ); ?>">
-					<?php echo esc_html( $warehouse->post_title ); ?>
-				</label>
-				<input
-					type="number"
-					id="fendi_warehouse_<?php echo esc_attr( $warehouse->ID ); ?>"
-					name="fendi_warehouse_<?php echo esc_attr( $warehouse->ID ); ?>"
-					value="<?php echo esc_attr( $stock ); ?>"
-				/>
-			</p>
+			<div style="border: 1px solid #c3c4c7; padding: 10px; margin-bottom: 10px;">
+				<h4><?php echo esc_html( $warehouse->post_title ); ?></h4>
+				<p>
+					<label for="fendi_warehouse_<?php echo esc_attr( $warehouse->ID ); ?>" style="display: block; margin-bottom: 5px;">
+						<?php esc_html_e( 'Current Stock', 'fendi-inventory-system' ); ?>
+					</label>
+					<input
+						type="number"
+						id="fendi_warehouse_<?php echo esc_attr( $warehouse->ID ); ?>"
+						name="fendi_warehouse_<?php echo esc_attr( $warehouse->ID ); ?>"
+						value="<?php echo esc_attr( $stock ); ?>"
+						placeholder="<?php esc_attr_e( 'Current Stock', 'fendi-inventory-system' ); ?>"
+					/>
+				</p>
+				<p>
+					<label for="fendi_low_stock_threshold_<?php echo esc_attr( $warehouse->ID ); ?>" style="display: block; margin-bottom: 5px;">
+						<?php esc_html_e( 'Low Stock Threshold', 'fendi-inventory-system' ); ?>
+					</label>
+					<input
+						type="number"
+						id="fendi_low_stock_threshold_<?php echo esc_attr( $warehouse->ID ); ?>"
+						name="fendi_low_stock_threshold_<?php echo esc_attr( $warehouse->ID ); ?>"
+						value="<?php echo esc_attr( $threshold ); ?>"
+						placeholder="<?php esc_attr_e( 'e.g., 10', 'fendi-inventory-system' ); ?>"
+					/>
+				</p>
+			</div>
 			<?php
 		}
 		?>
+		<hr>
+		<h4><?php esc_html_e( 'Alerts', 'fendi-inventory-system' ); ?></h4>
+		<?php
+		$high_sales_threshold = get_post_meta( $post->ID, '_high_sales_threshold', true );
+		$high_sales_period = get_post_meta( $post->ID, '_high_sales_period', true );
+		?>
+		<p>
+			<label for="fendi_high_sales_threshold" style="display: block; margin-bottom: 5px;">
+				<?php esc_html_e( 'High Sales Threshold', 'fendi-inventory-system' ); ?>
+			</label>
+			<input
+				type="number"
+				id="fendi_high_sales_threshold"
+				name="fendi_high_sales_threshold"
+				value="<?php echo esc_attr( $high_sales_threshold ); ?>"
+				placeholder="<?php esc_attr_e( 'e.g., 100', 'fendi-inventory-system' ); ?>"
+			/>
+			<span class="description"><?php esc_html_e( 'Number of sales to trigger the alert.', 'fendi-inventory-system' ); ?></span>
+		</p>
+		<p>
+			<label for="fendi_high_sales_period" style="display: block; margin-bottom: 5px;">
+				<?php esc_html_e( 'High Sales Period (hours)', 'fendi-inventory-system' ); ?>
+			</label>
+			<input
+				type="number"
+				id="fendi_high_sales_period"
+				name="fendi_high_sales_period"
+				value="<?php echo esc_attr( $high_sales_period ); ?>"
+				placeholder="<?php esc_attr_e( 'e.g., 24', 'fendi-inventory-system' ); ?>"
+			/>
+			<span class="description"><?php esc_html_e( 'The period in hours to check for high sales.', 'fendi-inventory-system' ); ?></span>
+		</p>
 		<hr>
 		<h4><?php esc_html_e( 'Barcode', 'fendi-inventory-system' ); ?></h4>
 		<p>
@@ -242,6 +291,21 @@ class Fendi_Inventory_System_Admin {
 					sanitize_text_field( $_POST[ 'fendi_warehouse_' . $warehouse->ID ] )
 				);
 			}
+			if ( isset( $_POST[ 'fendi_low_stock_threshold_' . $warehouse->ID ] ) ) {
+				update_post_meta(
+					$post_id,
+					'_low_stock_threshold_warehouse_' . $warehouse->ID,
+					sanitize_text_field( $_POST[ 'fendi_low_stock_threshold_' . $warehouse->ID ] )
+				);
+			}
+		}
+
+		if ( isset( $_POST['fendi_high_sales_threshold'] ) ) {
+			update_post_meta( $post_id, '_high_sales_threshold', sanitize_text_field( $_POST['fendi_high_sales_threshold'] ) );
+		}
+
+		if ( isset( $_POST['fendi_high_sales_period'] ) ) {
+			update_post_meta( $post_id, '_high_sales_period', sanitize_text_field( $_POST['fendi_high_sales_period'] ) );
 		}
 	}
 

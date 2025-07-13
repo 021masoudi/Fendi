@@ -36,6 +36,9 @@ export const deleteTransaction = (id) => api.delete(`/transactions/${id}`);
 export const getLedger = (account) => api.get(`/ledger/${account}`);
 export const getBalanceSheet = () => api.get('/balance-sheet');
 
+export const getSmsSettings = () => api.get('/settings/sms');
+export const saveSmsSettings = (data) => api.post('/settings/sms', data);
+
 export default {
   getUsers() {
     return api.get('/users');

@@ -21,6 +21,7 @@ import BarcodeManagement from './BarcodeManagement';
 import InventoryCount from './InventoryCount';
 import AccountsReceivable from './AccountsReceivable';
 import AccountsPayable from './AccountsPayable';
+import SMSSettings from './SMSSettings';
 
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -151,6 +152,11 @@ const App = () => {
                 <Link to="/notifications" className="text-blue-500 hover:text-blue-800">{__('Notifications', 'fendi-inventory-system')}</Link>
               </li>
             )}
+             {canAccess('administrator') && (
+              <li className="mr-6">
+                <Link to="/settings/sms" className="text-blue-500 hover:text-blue-800">{__('SMS Settings', 'fendi-inventory-system')}</Link>
+              </li>
+            )}
           </ul>
         </nav>
         <Routes>
@@ -176,6 +182,7 @@ const App = () => {
           {canAccess('warehouse_manager') && <Route path="/inventory-count" element={<InventoryCount />} />}
           {canAccess('cashier') && <Route path="/cash-drawer" element={<CashDrawerManagement />} />}
           {canAccess('administrator') && <Route path="/notifications" element={<Notifications />} />}
+          {canAccess('administrator') && <Route path="/settings/sms" element={<SMSSettings />} />}
         </Routes>
       </div>
     </Router>
