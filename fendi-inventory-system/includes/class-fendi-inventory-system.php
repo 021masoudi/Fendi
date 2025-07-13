@@ -257,13 +257,13 @@ class Fendi_Inventory_System {
 		$this->loader->add_action( 'edit_user_profile_update', $plugin_admin, 'save_user_warehouse_field' );
 
 		// Loyalty Program Hooks
-		$this->loader->add_action( 'woocommerce_order_status_completed', array( $plugin_api, 'add_loyalty_points' ), 10, 1 );
+		$this->loader->add_action( 'woocommerce_order_status_completed', $plugin_api, 'add_loyalty_points', 10, 1 );
 
 		// Login Redirect Hook
-		$this->loader->add_filter('login_redirect', array( $this, 'fendi_login_redirect'), 10, 3);
+		$this->loader->add_filter('login_redirect', $this, 'fendi_login_redirect', 10, 3);
 
 		// Block WP Admin access for non-admins
-		$this->loader->add_action('admin_init', array($this, 'block_wp_admin_access'));
+		$this->loader->add_action('admin_init', $this, 'block_wp_admin_access');
 	}
 
 	/**
