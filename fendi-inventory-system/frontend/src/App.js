@@ -117,7 +117,7 @@ const App = () => {
                 <Link to="/inventory-count" className="text-blue-500 hover:text-blue-800">{__('Inventory Count', 'fendi-inventory-system')}</Link>
               </li>
             )}
-            {canAccess('accountant') && (
+            {(canAccess('accountant') || canAccess('administrator')) && (
               <>
                 <li className="mr-6">
                   <Link to="/suppliers" className="text-blue-500 hover:text-blue-800">{__('Suppliers', 'fendi-inventory-system')}</Link>
