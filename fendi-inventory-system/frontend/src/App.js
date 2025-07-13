@@ -22,6 +22,8 @@ import InventoryCount from './InventoryCount';
 import AccountsReceivable from './AccountsReceivable';
 import AccountsPayable from './AccountsPayable';
 import SMSSettings from './SMSSettings';
+import LoyaltySettings from './LoyaltySettings';
+import DiscountCampaignManagement from './DiscountCampaignManagement';
 
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -157,6 +159,16 @@ const App = () => {
                 <Link to="/settings/sms" className="text-blue-500 hover:text-blue-800">{__('SMS Settings', 'fendi-inventory-system')}</Link>
               </li>
             )}
+            {canAccess('administrator') && (
+                <li className="mr-6">
+                    <Link to="/settings/loyalty" className="text-blue-500 hover:text-blue-800">{__('Loyalty Settings', 'fendi-inventory-system')}</Link>
+                </li>
+            )}
+            {canAccess('administrator') && (
+                <li className="mr-6">
+                    <Link to="/discounts" className="text-blue-500 hover:text-blue-800">{__('Discount Campaigns', 'fendi-inventory-system')}</Link>
+                </li>
+            )}
           </ul>
         </nav>
         <Routes>
@@ -183,6 +195,8 @@ const App = () => {
           {canAccess('cashier') && <Route path="/cash-drawer" element={<CashDrawerManagement />} />}
           {canAccess('administrator') && <Route path="/notifications" element={<Notifications />} />}
           {canAccess('administrator') && <Route path="/settings/sms" element={<SMSSettings />} />}
+          {canAccess('administrator') && <Route path="/settings/loyalty" element={<LoyaltySettings />} />}
+          {canAccess('administrator') && <Route path="/discounts" element={<DiscountCampaignManagement />} />}
         </Routes>
       </div>
     </Router>

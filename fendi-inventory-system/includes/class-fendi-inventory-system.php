@@ -256,6 +256,8 @@ class Fendi_Inventory_System {
 		$this->loader->add_action( 'personal_options_update', $plugin_admin, 'save_user_warehouse_field' );
 		$this->loader->add_action( 'edit_user_profile_update', $plugin_admin, 'save_user_warehouse_field' );
 
+		// Loyalty Program Hooks
+		$this->loader->add_action( 'woocommerce_order_status_completed', $plugin_api, 'add_loyalty_points' );
 	}
 
 	/**
@@ -378,6 +380,40 @@ class Fendi_Inventory_System {
 		);
 
 		register_post_type( 'notification', $args );
+
+		$labels = array(
+			'name'                  => _x( 'Discount Campaigns', 'Post type general name', 'fendi-inventory-system' ),
+			'singular_name'         => _x( 'Discount Campaign', 'Post type singular name', 'fendi-inventory-system' ),
+			'menu_name'             => _x( 'Discount Campaigns', 'Admin Menu text', 'fendi-inventory-system' ),
+			'name_admin_bar'        => _x( 'Discount Campaign', 'Add New on Toolbar', 'fendi-inventory-system' ),
+			'add_new'               => __( 'Add New', 'fendi-inventory-system' ),
+			'add_new_item'          => __( 'Add New Discount Campaign', 'fendi-inventory-system' ),
+			'new_item'              => __( 'New Discount Campaign', 'fendi-inventory-system' ),
+			'edit_item'             => __( 'Edit Discount Campaign', 'fendi-inventory-system' ),
+			'view_item'             => __( 'View Discount Campaign', 'fendi-inventory-system' ),
+			'all_items'             => __( 'All Discount Campaigns', 'fendi-inventory-system' ),
+			'search_items'          => __( 'Search Discount Campaigns', 'fendi-inventory-system' ),
+			'not_found'             => __( 'No discount campaigns found.', 'fendi-inventory-system' ),
+			'not_found_in_trash'    => __( 'No discount campaigns found in Trash.', 'fendi-inventory-system' ),
+		);
+
+		$args = array(
+			'labels'             => $labels,
+			'public'             => false,
+			'publicly_queryable' => false,
+			'show_ui'            => true,
+			'show_in_menu'       => 'fendi-inventory-system',
+			'query_var'          => false,
+			'rewrite'            => false,
+			'capability_type'    => 'post',
+			'has_archive'        => false,
+			'hierarchical'       => false,
+			'menu_position'      => null,
+			'supports'           => array( 'title' ),
+			'show_in_rest'       => true,
+		);
+
+		register_post_type( 'discount_campaign', $args );
 	}
 
 	/**

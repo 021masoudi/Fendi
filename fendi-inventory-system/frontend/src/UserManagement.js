@@ -61,6 +61,7 @@ const UserManagement = () => {
         <thead>
           <tr>
             <th className="px-4 py-2">{__('Username', 'fendi-inventory-system')}</th>
+            <th className="px-4 py-2">{__('Loyalty Points', 'fendi-inventory-system')}</th>
             <th className="px-4 py-2">{__('Role', 'fendi-inventory-system')}</th>
             <th className="px-4 py-2">{__('Status', 'fendi-inventory-system')}</th>
             <th className="px-4 py-2">{__('Actions', 'fendi-inventory-system')}</th>
@@ -70,6 +71,7 @@ const UserManagement = () => {
           {users.map((user) => (
             <tr key={user.ID}>
               <td className="border px-4 py-2">{user.data.user_login}</td>
+              <td className="border px-4 py-2">{user.roles.includes('customer') ? (user.meta._loyalty_points ? user.meta._loyalty_points[0] : 0) : 'N/A'}</td>
               <td className="border px-4 py-2">{user.roles[0]}</td>
               <td className="border px-4 py-2">{__('Active', 'fendi-inventory-system')}</td>
               <td className="border px-4 py-2">

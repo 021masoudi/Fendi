@@ -39,6 +39,17 @@ export const getBalanceSheet = () => api.get('/balance-sheet');
 export const getSmsSettings = () => api.get('/settings/sms');
 export const saveSmsSettings = (data) => api.post('/settings/sms', data);
 
+export const redeemLoyaltyPoints = (data) => api.post('/loyalty/redeem', data);
+
+export const getLoyaltySettings = () => api.get('/settings/loyalty');
+export const saveLoyaltySettings = (data) => api.post('/settings/loyalty', data);
+
+export const getDiscountCampaigns = () => api.get('/discount-campaigns');
+export const createDiscountCampaign = (data) => api.post('/discount-campaigns', data);
+export const updateDiscountCampaign = (id, data) => api.put(`/discount-campaigns/${id}`, data);
+export const deleteDiscountCampaign = (id) => api.delete(`/discount-campaigns/${id}`);
+export const validateDiscountCode = (code) => api.get(`/discounts/validate/${code}`);
+
 export default {
   getUsers() {
     return api.get('/users');

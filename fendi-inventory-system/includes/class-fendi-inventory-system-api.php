@@ -394,6 +394,254 @@ class Fendi_Inventory_System_Api {
 				'permission_callback' => array( $this, 'manage_options_permission_check' ),
 			)
 		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/loyalty/redeem',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'redeem_loyalty_points' ),
+				'permission_callback' => array( $this, 'create_order_permissions_check' ), // Same as creating an order
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/settings/loyalty',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_loyalty_settings' ),
+				'permission_callback' => array( $this, 'manage_options_permission_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/settings/loyalty',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'save_loyalty_settings' ),
+				'permission_callback' => array( $this, 'manage_options_permission_check' ),
+			)
+		);
+
+		// Discount Campaigns CRUD
+		register_rest_route( 'fendi/v1', '/discount-campaigns', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'get_discount_campaigns' ),
+			'permission_callback' => array( $this, 'manage_options_permission_check' ),
+		) );
+		register_rest_route( 'fendi/v1', '/discount-campaigns', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'create_discount_campaign' ),
+			'permission_callback' => array( $this, 'manage_options_permission_check' ),
+		) );
+		register_rest_route( 'fendi/v1', '/discount-campaigns/(?P<id>\\d+)', array(
+			'methods' => 'PUT',
+			'callback' => array( $this, 'update_discount_campaign' ),
+			'permission_callback' => array( $this, 'manage_options_permission_check' ),
+		) );
+		register_rest_route( 'fendi/v1', '/discount-campaigns/(?P<id>\\d+)', array(
+			'methods' => 'DELETE',
+			'callback' => array( $this, 'delete_discount_campaign' ),
+			'permission_callback' => array( $this, 'manage_options_permission_check' ),
+		) );
+		register_rest_route( 'fendi/v1', '/discounts/validate/(?P<code>[a-zA-Z0-9-]+)', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'validate_discount_code' ),
+			'permission_callback' => array( $this, 'create_order_permissions_check' ),
+		) );
+	}
+
+	/**
+	 * Get loyalty settings.
+	 *
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response
+	 */
+	public function get_loyalty_settings( WP_REST_Request $request ) {
+		$settings = array(
+			'fendi_loyalty_points_rate' => get_option( 'fendi_loyalty_points_rate', 1000 ),
+			'fendi_loyalty_redemption_rate' => get_option( 'fendi_loyalty_redemption_rate', 1 ),
+		);
+		return new WP_REST_Response( $settings, 200 );
+	}
+
+	/**
+	 * Save loyalty settings.
+	 *
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response
+	 */
+	public function save_loyalty_settings( WP_REST_Request $request ) {
+		$params = $request->get_json_params();
+		if ( isset( $params['fendi_loyalty_points_rate'] ) ) {
+			update_option( 'fendi_loyalty_points_rate', sanitize_text_field( $params['fendi_loyalty_points_rate'] ) );
+		}
+		if ( isset( $params['fendi_loyalty_redemption_rate'] ) ) {
+			update_option( 'fendi_loyalty_redemption_rate', sanitize_text_field( $params['fendi_loyalty_redemption_rate'] ) );
+		}
+		return new WP_REST_Response( array( 'success' => true ), 200 );
+	}
+
+	public function get_discount_campaigns( WP_REST_Request $request ) {
+		$posts = get_posts(
+			array(
+				'post_type'      => 'discount_campaign',
+				'posts_per_page' => -1,
+				'post_status'    => 'publish',
+			)
+		);
+		foreach ( $posts as $post ) {
+			$post->meta = get_post_meta( $post->ID );
+		}
+		return new WP_REST_Response( $posts, 200 );
+	}
+
+	public function create_discount_campaign( WP_REST_Request $request ) {
+		$params = $request->get_json_params();
+		$post_id = wp_insert_post(
+			array(
+				'post_title'  => sanitize_text_field( $params['title'] ),
+				'post_type'   => 'discount_campaign',
+				'post_status' => 'publish',
+			)
+		);
+
+		if ( is_wp_error( $post_id ) ) {
+			return $post_id;
+		}
+
+		update_post_meta( $post_id, '_type', sanitize_text_field( $params['type'] ) );
+		update_post_meta( $post_id, '_value', sanitize_text_field( $params['value'] ) );
+		update_post_meta( $post_id, '_code', sanitize_text_field( $params['code'] ) );
+		update_post_meta( $post_id, '_start_date', sanitize_text_field( $params['start_date'] ) );
+		update_post_meta( $post_id, '_end_date', sanitize_text_field( $params['end_date'] ) );
+
+		$post = get_post( $post_id );
+		$post->meta = get_post_meta( $post_id );
+		return new WP_REST_Response( $post, 201 );
+	}
+
+	public function update_discount_campaign( WP_REST_Request $request ) {
+		$id = $request['id'];
+		$params = $request->get_json_params();
+		wp_update_post(
+			array(
+				'ID' => $id,
+				'post_title'  => sanitize_text_field( $params['title'] ),
+			)
+		);
+
+		update_post_meta( $id, '_type', sanitize_text_field( $params['type'] ) );
+		update_post_meta( $id, '_value', sanitize_text_field( $params['value'] ) );
+		update_post_meta( $id, '_code', sanitize_text_field( $params['code'] ) );
+		update_post_meta( $id, '_start_date', sanitize_text_field( $params['start_date'] ) );
+		update_post_meta( $id, '_end_date', sanitize_text_field( $params['end_date'] ) );
+
+		$post = get_post( $id );
+		$post->meta = get_post_meta( $id );
+		return new WP_REST_Response( $post, 200 );
+	}
+
+	public function delete_discount_campaign( WP_REST_Request $request ) {
+		$id = $request['id'];
+		wp_delete_post( $id, true );
+		return new WP_REST_Response( array( 'success' => true ), 200 );
+	}
+
+	public function validate_discount_code( WP_REST_Request $request ) {
+		$code = $request['code'];
+		$posts = get_posts(
+			array(
+				'post_type'  => 'discount_campaign',
+				'meta_key'   => '_code',
+				'meta_value' => $code,
+				'posts_per_page' => 1,
+				'post_status' => 'publish',
+			)
+		);
+
+		if ( empty( $posts ) ) {
+			return new WP_Error( 'not_found', __( 'Discount code not found.', 'fendi-inventory-system' ), array( 'status' => 404 ) );
+		}
+
+		$campaign = $posts[0];
+		$start_date = get_post_meta( $campaign->ID, '_start_date', true );
+		$end_date = get_post_meta( $campaign->ID, '_end_date', true );
+		$today = date( 'Y-m-d' );
+
+		if ( ( ! empty( $start_date ) && $today < $start_date ) || ( ! empty( $end_date ) && $today > $end_date ) ) {
+			return new WP_Error( 'expired', __( 'This discount code is not active.', 'fendi-inventory-system' ), array( 'status' => 400 ) );
+		}
+
+		$campaign->meta = get_post_meta( $campaign->ID );
+		return new WP_REST_Response( $campaign, 200 );
+	}
+
+	/**
+	 * Redeem loyalty points for a discount.
+	 *
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response
+	 */
+	public function redeem_loyalty_points( WP_REST_Request $request ) {
+		$params = $request->get_json_params();
+		$customer_id = $params['customer_id'];
+		$points_to_redeem = (int) $params['points'];
+
+		if ( ! $customer_id || ! $points_to_redeem ) {
+			return new WP_Error( 'missing_params', __( 'Customer ID and points are required.', 'fendi-inventory-system' ), array( 'status' => 400 ) );
+		}
+
+		$current_points = (int) get_user_meta( $customer_id, '_loyalty_points', true );
+
+		if ( $points_to_redeem > $current_points ) {
+			return new WP_Error( 'insufficient_points', __( 'Insufficient loyalty points.', 'fendi-inventory-system' ), array( 'status' => 400 ) );
+		}
+
+		$redemption_rate = get_option( 'fendi_loyalty_redemption_rate', 1 ); // e.g., 1 point = 1 currency unit
+		$discount_amount = $points_to_redeem * $redemption_rate;
+
+		$new_points = $current_points - $points_to_redeem;
+		update_user_meta( $customer_id, '_loyalty_points', $new_points );
+
+		return new WP_REST_Response(
+			array(
+				'success'         => true,
+				'discount_amount' => $discount_amount,
+				'new_points_total' => $new_points,
+			),
+			200
+		);
+	}
+
+	/**
+	 * Add loyalty points to a customer after an order is completed.
+	 *
+	 * @param int $order_id
+	 */
+	public function add_loyalty_points( $order_id ) {
+		$order = wc_get_order( $order_id );
+		$customer_id = $order->get_customer_id();
+
+		if ( ! $customer_id ) {
+			return;
+		}
+
+		$rate = get_option( 'fendi_loyalty_points_rate', 1000 ); // e.g., 1 point per 1000 currency units
+		if (empty($rate) || $rate == 0) {
+			return; // Avoid division by zero
+		}
+
+		$total = $order->get_total();
+		$points_earned = floor( $total / $rate );
+
+		if ( $points_earned > 0 ) {
+			$current_points = (int) get_user_meta( $customer_id, '_loyalty_points', true );
+			$new_points = $current_points + $points_earned;
+			update_user_meta( $customer_id, '_loyalty_points', $new_points );
+		}
 	}
 
 	/**
@@ -1156,6 +1404,7 @@ class Fendi_Inventory_System_Api {
 		}
 		$user->meta = get_user_meta( $user->ID );
 		$user->meta['_assigned_warehouse'] = get_user_meta( $user->ID, '_assigned_warehouse', true );
+		$user->meta['_loyalty_points'] = get_user_meta( $user->ID, '_loyalty_points', true );
 		return new WP_REST_Response( $user, 200 );
 	}
 

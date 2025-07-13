@@ -123,10 +123,16 @@ const POS = () => {
   };
 
   const [discount, setDiscount] = useState(0);
+  const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
+  const [campaignDiscount, setCampaignDiscount] = useState(0);
+  const [pointsToRedeem, setPointsToRedeem] = useState('');
+  const [discountCode, setDiscountCode] = useState('');
 
   const getTotal = () => {
     const total = cart.reduce((total, item) => total + item.price * item.quantity, 0);
-    return total - discount;
+    const totalDiscount = discount + loyaltyDiscount + campaignDiscount;
+    const finalTotal = total - totalDiscount;
+    return finalTotal > 0 ? finalTotal : 0;
   };
 
   const handleDiscount = (e) => {
@@ -142,9 +148,55 @@ const POS = () => {
     setIsPaymentModalOpen(true);
   };
 
+  const handleRedeemPoints = async () => {
+    if (!customer || !pointsToRedeem) return;
+    try {
+        const response = await api.redeemLoyaltyPoints({
+            customer_id: customer.id,
+            points: pointsToRedeem,
+        });
+        setLoyaltyDiscount(response.data.discount_amount);
+        // We need a way to update the customer's points in the UI
+        // For now, just alert the user.
+        alert(`${response.data.discount_amount} discount applied!`);
+    } catch (error) {
+        alert(error.response.data.message);
+    }
+  };
+
+  const handleApplyDiscountCode = async () => {
+    if (!discountCode) return;
+    try {
+        const response = await api.validateDiscountCode(discountCode);
+        const campaign = response.data;
+        const cartTotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
+
+        let discountAmount = 0;
+        if (campaign.meta._type[0] === 'percentage') {
+            discountAmount = (cartTotal * parseFloat(campaign.meta._value[0])) / 100;
+        } else {
+            discountAmount = parseFloat(campaign.meta._value[0]);
+        }
+
+        setCampaignDiscount(discountAmount);
+        alert(__('Discount code applied successfully!', 'fendi-inventory-system'));
+
+    } catch (error) {
+        alert(error.response.data.message);
+    }
+  };
+
   return (
     <div className="grid grid-cols-2 gap-4">
       <div>
+         {/* Customer Selection UI would go here */}
+         {/* For now, we assume a customer is selected and their data is in `customer` state */}
+         {customer && (
+            <div className="p-4 mb-4 bg-blue-100 border border-blue-400 rounded">
+                <h3 className="font-bold text-blue-800">{__('Selected Customer:', 'fendi-inventory-system')} {customer.name}</h3>
+                <p className="text-blue-700">{__('Loyalty Points:', 'fendi-inventory-system')} {customer.loyalty_points || 0}</p>
+            </div>
+         )}
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">{__('Products', 'fendi-inventory-system')}</h2>
           <select
@@ -208,10 +260,10 @@ const POS = () => {
             </li>
           ))}
         </ul>
-        <div className="mt-4">
-          <div className="flex items-center mb-4">
-            <label className="block text-gray-700 text-sm font-bold mr-2" htmlFor="discount">
-              {__('Discount', 'fendi-inventory-system')}
+        <div className="mt-4 space-y-4">
+          <div className="flex items-center">
+            <label className="block text-gray-700 text-sm font-bold mr-2 w-32" htmlFor="discount">
+              {__('Manual Discount', 'fendi-inventory-system')}
             </label>
             <input
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
@@ -222,6 +274,45 @@ const POS = () => {
               disabled={!currentUser || (!currentUser.roles.includes('administrator') && !currentUser.meta._can_give_discount)}
             />
           </div>
+          {customer && (
+            <div className="flex items-center">
+                <label className="block text-gray-700 text-sm font-bold mr-2 w-32" htmlFor="redeem_points">
+                    {__('Redeem Points', 'fendi-inventory-system')}
+                </label>
+                <input
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    id="redeem_points"
+                    type="number"
+                    value={pointsToRedeem}
+                    onChange={(e) => setPointsToRedeem(e.target.value)}
+                    placeholder={`Max ${customer.loyalty_points || 0}`}
+                />
+                <button
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ml-2"
+                    onClick={handleRedeemPoints}
+                >
+                    {__('Redeem', 'fendi-inventory-system')}
+                </button>
+            </div>
+          )}
+           <div className="flex items-center">
+                <label className="block text-gray-700 text-sm font-bold mr-2 w-32" htmlFor="discount_code">
+                    {__('Discount Code', 'fendi-inventory-system')}
+                </label>
+                <input
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    id="discount_code"
+                    type="text"
+                    value={discountCode}
+                    onChange={(e) => setDiscountCode(e.target.value)}
+                />
+                <button
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ml-2"
+                    onClick={handleApplyDiscountCode}
+                >
+                    {__('Apply', 'fendi-inventory-system')}
+                </button>
+            </div>
           <h3 className="text-lg font-bold">{__('Total:', 'fendi-inventory-system')} {getTotal()}</h3>
           <button
             className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-4"
