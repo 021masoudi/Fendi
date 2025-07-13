@@ -485,6 +485,28 @@ class Fendi_Inventory_System_Api {
 			'callback' => array( $this, 'get_order' ),
 			'permission_callback' => array( $this, 'create_order_permissions_check' ),
 		) );
+
+		// Print Templates CRUD
+		register_rest_route( 'fendi/v1', '/print-templates', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'get_print_templates' ),
+			'permission_callback' => array( $this, 'manage_options_permission_check' ),
+		) );
+		register_rest_route( 'fendi/v1', '/print-templates', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'create_print_template' ),
+			'permission_callback' => array( $this, 'manage_options_permission_check' ),
+		) );
+		register_rest_route( 'fendi/v1', '/print-templates/(?P<id>\\d+)', array(
+			'methods' => 'PUT',
+			'callback' => array( $this, 'update_print_template' ),
+			'permission_callback' => array( $this, 'manage_options_permission_check' ),
+		) );
+		register_rest_route( 'fendi/v1', '/print-templates/(?P<id>\\d+)', array(
+			'methods' => 'DELETE',
+			'callback' => array( $this, 'delete_print_template' ),
+			'permission_callback' => array( $this, 'manage_options_permission_check' ),
+		) );
 	}
 
 	/**
@@ -611,6 +633,46 @@ class Fendi_Inventory_System_Api {
 
 		$campaign->meta = get_post_meta( $campaign->ID );
 		return new WP_REST_Response( $campaign, 200 );
+	}
+
+	public function get_print_templates( WP_REST_Request $request ) {
+		$posts = get_posts( array(
+			'post_type' => 'print_template',
+			'posts_per_page' => -1,
+		) );
+		foreach ( $posts as $post ) {
+			$post->meta = get_post_meta( $post->ID );
+		}
+		return new WP_REST_Response( $posts, 200 );
+	}
+
+	public function create_print_template( WP_REST_Request $request ) {
+		$params = $request->get_json_params();
+		$post_id = wp_insert_post( array(
+			'post_title' => sanitize_text_field( $params['title'] ),
+			'post_content' => wp_kses_post( $params['content'] ),
+			'post_type' => 'print_template',
+			'post_status' => 'publish',
+		) );
+		update_post_meta( $post_id, '_type', sanitize_text_field( $params['type'] ) );
+		return new WP_REST_Response( get_post( $post_id ), 201 );
+	}
+
+	public function update_print_template( WP_REST_Request $request ) {
+		$id = $request['id'];
+		$params = $request->get_json_params();
+		wp_update_post( array(
+			'ID' => $id,
+			'post_title' => sanitize_text_field( $params['title'] ),
+			'post_content' => wp_kses_post( $params['content'] ),
+		) );
+		update_post_meta( $id, '_type', sanitize_text_field( $params['type'] ) );
+		return new WP_REST_Response( get_post( $id ), 200 );
+	}
+
+	public function delete_print_template( WP_REST_Request $request ) {
+		wp_delete_post( $request['id'], true );
+		return new WP_REST_Response( array( 'success' => true ), 200 );
 	}
 
 	public function get_order( WP_REST_Request $request ) {

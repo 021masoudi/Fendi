@@ -437,6 +437,29 @@ class Fendi_Inventory_System {
 		);
 
 		register_post_type( 'time_log', $args );
+
+		$labels = array(
+			'name'                  => _x( 'Print Templates', 'Post type general name', 'fendi-inventory-system' ),
+			'singular_name'         => _x( 'Print Template', 'Post type singular name', 'fendi-inventory-system' ),
+			'menu_name'             => _x( 'Print Templates', 'Admin Menu text', 'fendi-inventory-system' ),
+		);
+
+		$args = array(
+			'labels'             => $labels,
+			'public'             => false,
+			'publicly_queryable' => false,
+			'show_ui'            => false,
+			'show_in_menu'       => false,
+			'query_var'          => false,
+			'rewrite'            => false,
+			'capability_type'    => 'post',
+			'has_archive'        => false,
+			'hierarchical'       => false,
+			'supports'           => array( 'title', 'editor' ),
+			'show_in_rest'       => true,
+		);
+
+		register_post_type( 'print_template', $args );
 	}
 
 	/**

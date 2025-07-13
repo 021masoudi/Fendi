@@ -27,6 +27,7 @@ import DiscountCampaignManagement from './DiscountCampaignManagement';
 import TimeClock from './TimeClock';
 import TimeLogReport from './TimeLogReport';
 import ReturnOrder from './ReturnOrder';
+import TemplateManager from './TemplateManager';
 
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -182,6 +183,11 @@ const App = () => {
                     <Link to="/returns" className="text-blue-500 hover:text-blue-800">{__('Returns', 'fendi-inventory-system')}</Link>
                 </li>
             )}
+            {canAccess('administrator') && (
+                <li className="mr-6">
+                    <Link to="/settings/templates" className="text-blue-500 hover:text-blue-800">{__('Print Templates', 'fendi-inventory-system')}</Link>
+                </li>
+            )}
           </ul>
         </nav>
         {isOnline && <TimeClock currentUser={currentUser} />}
@@ -213,6 +219,7 @@ const App = () => {
           {canAccess('administrator') && <Route path="/discounts" element={<DiscountCampaignManagement />} />}
           {canAccess('administrator') && <Route path="/reports/time-logs" element={<TimeLogReport />} />}
           {(canAccess('administrator') || canAccess('cashier')) && <Route path="/returns" element={<ReturnOrder />} />}
+          {canAccess('administrator') && <Route path="/settings/templates" element={<TemplateManager />} />}
         </Routes>
       </div>
     </Router>
