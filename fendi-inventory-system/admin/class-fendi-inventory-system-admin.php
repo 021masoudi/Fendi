@@ -74,6 +74,11 @@ class Fendi_Inventory_System_Admin {
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/fendi-inventory-system-admin.js', array( 'wp-element', 'wp-i18n' ), $this->version, true );
 
+		if ( 'product' === get_post_type() ) {
+			wp_enqueue_script( 'jsbarcode', 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js', array(), '3.11.5', true );
+			wp_enqueue_script( $this->plugin_name . '-barcode', plugin_dir_url( __FILE__ ) . 'js/fendi-inventory-system-barcode.js', array( 'jquery', 'jsbarcode' ), $this->version, true );
+		}
+
 		wp_set_script_translations( $this->plugin_name, 'fendi-inventory-system', plugin_dir_path( __FILE__ ) . '../languages' );
 
 		wp_localize_script(
@@ -178,6 +183,22 @@ class Fendi_Inventory_System_Admin {
 			</p>
 			<?php
 		}
+		?>
+		<hr>
+		<h4><?php esc_html_e( 'Barcode', 'fendi-inventory-system' ); ?></h4>
+		<p>
+			<button type="button" id="fendi-generate-barcode" class="button button-secondary" data-product-id="<?php echo esc_attr( $post->ID ); ?>">
+				<?php esc_html_e( 'Generate Barcode', 'fendi-inventory-system' ); ?>
+			</button>
+		</p>
+		<div id="fendi-barcode-modal" style="display:none;">
+			<div id="fendi-barcode-modal-content">
+				<svg id="fendi-barcode"></svg>
+				<button type="button" id="fendi-print-barcode" class="button button-primary"><?php esc_html_e( 'Print', 'fendi-inventory-system' ); ?></button>
+				<button type="button" id="fendi-close-barcode-modal" class="button button-secondary"><?php esc_html_e( 'Close', 'fendi-inventory-system' ); ?></button>
+			</div>
+		</div>
+		<?php
 	}
 
 	/**
