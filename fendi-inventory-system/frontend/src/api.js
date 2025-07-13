@@ -60,6 +60,10 @@ export const returnOrder = (id, data) => api.post(`/orders/${id}/return`, data);
 
 export const quickAddCustomer = (data) => api.post('/customers/quick-add', data);
 
+export const login = (username, password) => api.post('/auth/login', { username, password });
+
+export const getCurrentUser = () => api.get('/me');
+
 export default {
   getUsers(params = {}) {
     return api.get('/users', { params });

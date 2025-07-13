@@ -513,6 +513,12 @@ class Fendi_Inventory_System_Api {
 			'callback' => array( $this, 'quick_add_customer' ),
 			'permission_callback' => array( $this, 'create_order_permissions_check' ), // Same permission as POS operator
 		) );
+
+		register_rest_route( 'fendi/v1', '/auth/login', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'auth_login' ),
+			'permission_callback' => '__return_true',
+		) );
 	}
 
 	/**
@@ -639,6 +645,25 @@ class Fendi_Inventory_System_Api {
 
 		$campaign->meta = get_post_meta( $campaign->ID );
 		return new WP_REST_Response( $campaign, 200 );
+	}
+
+	public function auth_login( WP_REST_Request $request ) {
+		$creds = array();
+		$params = $request->get_json_params();
+		$creds['user_login'] = $params['username'];
+		$creds['user_password'] = $params['password'];
+		$creds['remember'] = true;
+
+		$user = wp_signon( $creds, false );
+
+		if ( is_wp_error( $user ) ) {
+			return new WP_Error( 'login_failed', __( 'Invalid username or password.', 'fendi-inventory-system' ), array( 'status' => 401 ) );
+		}
+
+		wp_set_current_user($user->ID);
+		wp_set_auth_cookie($user->ID, true);
+
+		return new WP_REST_Response( array('success' => true, 'user' => $user->get_data()), 200 );
 	}
 
 	public function quick_add_customer( WP_REST_Request $request ) {

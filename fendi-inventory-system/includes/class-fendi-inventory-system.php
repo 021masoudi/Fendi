@@ -258,6 +258,12 @@ class Fendi_Inventory_System {
 
 		// Loyalty Program Hooks
 		$this->loader->add_action( 'woocommerce_order_status_completed', $plugin_api, 'add_loyalty_points' );
+
+		// Login Redirect Hook
+		$this->loader->add_filter('login_redirect', array( $this, 'fendi_login_redirect'), 10, 3);
+
+		// Block WP Admin access for non-admins
+		$this->loader->add_action('admin_init', array($this, 'block_wp_admin_access'));
 	}
 
 	/**
@@ -520,4 +526,47 @@ class Fendi_Inventory_System {
 		return $this->version;
 	}
 
+	/**
+	 * Redirect users to the Fendi admin panel after login.
+	 *
+	 * @param string $redirect_to           The redirect destination URL.
+	 * @param string $requested_redirect_to The requested redirect destination URL passed as a parameter.
+	 * @param WP_User|WP_Error $user        WP_User object if login was successful, WP_Error object otherwise.
+	 * @return string
+	 */
+	public function fendi_login_redirect( $redirect_to, $requested_redirect_to, $user ) {
+		// Check if login was successful and user is not an administrator.
+		if ( ! is_wp_error( $user ) ) {
+			$fendi_roles = array('cashier', 'warehouse_manager', 'accountant');
+			$user_roles = (array) $user->roles;
+
+			// If the user has one of the custom roles and is not an admin
+			if ( array_intersect( $fendi_roles, $user_roles ) && ! in_array( 'administrator', $user_roles ) ) {
+				return admin_url( 'admin.php?page=fendi-inventory-system' );
+			}
+		}
+		return $redirect_to;
+	}
+
+	/**
+	 * Block non-administrator users from accessing the WordPress admin area.
+	 */
+	public function block_wp_admin_access() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			return;
+		}
+
+		if ( current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$fendi_roles = array('cashier', 'warehouse_manager', 'accountant');
+		$user = wp_get_current_user();
+		$user_roles = (array) $user->roles;
+
+		if ( array_intersect( $fendi_roles, $user_roles ) ) {
+			wp_redirect( admin_url( 'admin.php?page=fendi-inventory-system' ) );
+			exit;
+		}
+	}
 }
