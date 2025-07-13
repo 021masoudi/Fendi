@@ -9,6 +9,7 @@ import StockRequests from './StockRequests';
 import SupplierManagement from './SupplierManagement';
 import PurchaseOrderManagement from './PurchaseOrderManagement';
 import FinancialReports from './FinancialReports';
+import Notifications from './Notifications';
 
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -91,6 +92,11 @@ const App = () => {
                 </li>
               </>
             )}
+            {canAccess('administrator') && (
+              <li className="mr-6">
+                <Link to="/notifications" className="text-blue-500 hover:text-blue-800">{__('Notifications', 'fendi-inventory-system')}</Link>
+              </li>
+            )}
           </ul>
         </nav>
         <Routes>
@@ -106,6 +112,7 @@ const App = () => {
               <Route path="/financial-reports" element={<FinancialReports />} />
             </>
           )}
+          {canAccess('administrator') && <Route path="/notifications" element={<Notifications />} />}
         </Routes>
       </div>
     </Router>

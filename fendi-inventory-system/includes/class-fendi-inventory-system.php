@@ -195,6 +195,7 @@ class Fendi_Inventory_System {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-admin.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-supplier.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-purchase-order.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-settings.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing
@@ -206,6 +207,7 @@ class Fendi_Inventory_System {
 		 * The class responsible for defining all API routes.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-fendi-inventory-system-api.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-fendi-inventory-system-notifications.php';
 
 		$this->loader = new Fendi_Inventory_System_Loader();
 
@@ -339,6 +341,41 @@ class Fendi_Inventory_System {
 		);
 
 		register_post_type( 'stock_request', $args );
+
+		$labels = array(
+			'name'                  => _x( 'Notifications', 'Post type general name', 'fendi-inventory-system' ),
+			'singular_name'         => _x( 'Notification', 'Post type singular name', 'fendi-inventory-system' ),
+			'menu_name'             => _x( 'Notifications', 'Admin Menu text', 'fendi-inventory-system' ),
+			'name_admin_bar'        => _x( 'Notification', 'Add New on Toolbar', 'fendi-inventory-system' ),
+			'add_new'               => __( 'Add New', 'fendi-inventory-system' ),
+			'add_new_item'          => __( 'Add New Notification', 'fendi-inventory-system' ),
+			'new_item'              => __( 'New Notification', 'fendi-inventory-system' ),
+			'edit_item'             => __( 'Edit Notification', 'fendi-inventory-system' ),
+			'view_item'             => __( 'View Notification', 'fendi-inventory-system' ),
+			'all_items'             => __( 'All Notifications', 'fendi-inventory-system' ),
+			'search_items'          => __( 'Search Notifications', 'fendi-inventory-system' ),
+			'parent_item_colon'     => __( 'Parent Notifications:', 'fendi-inventory-system' ),
+			'not_found'             => __( 'No notifications found.', 'fendi-inventory-system' ),
+			'not_found_in_trash'    => __( 'No notifications found in Trash.', 'fendi-inventory-system' ),
+		);
+
+		$args = array(
+			'labels'             => $labels,
+			'public'             => false,
+			'publicly_queryable' => false,
+			'show_ui'            => true,
+			'show_in_menu'       => 'fendi-inventory-system',
+			'query_var'          => false,
+			'rewrite'            => false,
+			'capability_type'    => 'post',
+			'has_archive'        => false,
+			'hierarchical'       => false,
+			'menu_position'      => null,
+			'supports'           => array( 'title', 'editor' ),
+			'show_in_rest'       => true,
+		);
+
+		register_post_type( 'notification', $args );
 	}
 
 	/**

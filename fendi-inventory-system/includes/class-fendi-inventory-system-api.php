@@ -264,6 +264,16 @@ class Fendi_Inventory_System_Api {
 				'permission_callback' => array( $this, 'get_financial_reports_permissions_check' ),
 			)
 		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/notifications',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_notifications' ),
+				'permission_callback' => array( $this, 'get_notifications_permissions_check' ),
+			)
+		);
 	}
 
 	/**
@@ -1179,5 +1189,31 @@ class Fendi_Inventory_System_Api {
 		);
 
 		return new WP_REST_Response( $response, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to get notifications.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function get_notifications_permissions_check( $request ) {
+		return current_user_can( 'manage_options' );
+	}
+
+	/**
+	 * Get a list of notifications.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function get_notifications( $request ) {
+		$posts = get_posts(
+			array(
+				'post_type'      => 'notification',
+				'posts_per_page' => -1,
+			)
+		);
+		return new WP_REST_Response( $posts, 200 );
 	}
 }

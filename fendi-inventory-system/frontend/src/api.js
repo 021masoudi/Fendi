@@ -21,6 +21,8 @@ export const getFinancialReports = (startDate, endDate) => api.get('/financial-r
 
 export const getProducts = (search = '') => api.get(`/products?s=${search}`);
 
+export const getNotifications = () => api.get('/notifications');
+
 export default {
   getUsers() {
     return api.get('/users');
