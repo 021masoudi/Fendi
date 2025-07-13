@@ -340,8 +340,13 @@ const POS = () => {
         <Modal onClose={() => setIsPaymentModalOpen(false)}>
           <PaymentForm
             total={getTotal()}
-            onSubmit={async (data) => {
-              const orderData = { ...data, cart, warehouse_id: selectedWarehouse };
+            onSubmit={async (paymentData) => {
+              const orderData = {
+                  cart,
+                  warehouse_id: selectedWarehouse,
+                  customer_id: paymentData.customer,
+                  payment_details: paymentData.payments
+                };
               if (navigator.onLine) {
                 const response = await api.createOrder(orderData);
                 setCart([]);

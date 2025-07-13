@@ -507,6 +507,12 @@ class Fendi_Inventory_System_Api {
 			'callback' => array( $this, 'delete_print_template' ),
 			'permission_callback' => array( $this, 'manage_options_permission_check' ),
 		) );
+
+		register_rest_route( 'fendi/v1', '/customers/quick-add', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'quick_add_customer' ),
+			'permission_callback' => array( $this, 'create_order_permissions_check' ), // Same permission as POS operator
+		) );
 	}
 
 	/**
@@ -633,6 +639,40 @@ class Fendi_Inventory_System_Api {
 
 		$campaign->meta = get_post_meta( $campaign->ID );
 		return new WP_REST_Response( $campaign, 200 );
+	}
+
+	public function quick_add_customer( WP_REST_Request $request ) {
+		$params = $request->get_json_params();
+		$email = sanitize_email( $params['email'] );
+
+		if ( ! is_email( $email ) ) {
+			return new WP_Error( 'invalid_email', __( 'Invalid email address.', 'fendi-inventory-system' ), array( 'status' => 400 ) );
+		}
+		if ( email_exists( $email ) ) {
+			return new WP_Error( 'email_exists', __( 'A user with this email address already exists.', 'fendi-inventory-system' ), array( 'status' => 400 ) );
+		}
+
+		$username = sanitize_user( $params['first_name'] . '.' . $params['last_name'] . rand(1, 99) );
+		$password = wp_generate_password();
+
+		$user_id = wp_create_user( $username, $password, $email );
+
+		if ( is_wp_error( $user_id ) ) {
+			return $user_id;
+		}
+
+		wp_update_user( array(
+			'ID' => $user_id,
+			'first_name' => sanitize_text_field($params['first_name']),
+			'last_name' => sanitize_text_field($params['last_name']),
+			'display_name' => sanitize_text_field($params['first_name']) . ' ' . sanitize_text_field($params['last_name']),
+		) );
+		update_user_meta( $user_id, 'billing_phone', sanitize_text_field( $params['phone'] ) );
+
+		$user = get_user_by( 'id', $user_id );
+		$user->set_role( 'customer' );
+
+		return new WP_REST_Response( $user, 201 );
 	}
 
 	public function get_print_templates( WP_REST_Request $request ) {
@@ -993,15 +1033,14 @@ class Fendi_Inventory_System_Api {
 	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
 	 */
 	public function get_users( $request ) {
-		$current_user = wp_get_current_user();
-		$args = array();
+		$args = array(
+			'role__in' => array('customer', 'subscriber'), // Search only for customers
+		);
 
-		if ( in_array( 'warehouse_manager', $current_user->roles, true ) ) {
-			$assigned_warehouse = get_user_meta( $current_user->ID, '_assigned_warehouse', true );
-			if ( $assigned_warehouse ) {
-				$args['meta_key'] = '_assigned_warehouse';
-				$args['meta_value'] = $assigned_warehouse;
-			}
+		$search_term = $request->get_param('s');
+		if ( ! empty( $search_term ) ) {
+			$args['search'] = '*' . esc_attr( $search_term ) . '*';
+			$args['search_columns'] = array( 'user_login', 'user_email', 'user_nicename', 'display_name' );
 		}
 
 		$users = get_users( $args );
@@ -1650,9 +1689,22 @@ class Fendi_Inventory_System_Api {
 			}
 		}
 
-		$order->set_customer_id( $params['customer'] );
+		if ( ! empty( $params['customer_id'] ) ) {
+			$order->set_customer_id( $params['customer_id'] );
+		}
+
 		$order->calculate_totals();
+
+		if ( ! empty( $params['payment_details'] ) ) {
+			$order->update_meta_data( '_payment_details', $params['payment_details'] );
+			// You might want to set the payment method on the order itself
+			// For simplicity, we'll just store the details.
+			$order->set_payment_method('multiple');
+			$order->set_payment_method_title(__('Multiple Payments', 'fendi-inventory-system'));
+		}
+
 		$order->update_status( 'completed' );
+		$order->save();
 
 		return new WP_REST_Response( $order->get_data(), 201 );
 	}

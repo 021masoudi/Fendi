@@ -58,9 +58,11 @@ export const getTimeLogs = (params) => api.get('/time-logs', { params });
 export const getOrderById = (id) => api.get(`/orders/${id}`); // Assuming this endpoint exists or will be created
 export const returnOrder = (id, data) => api.post(`/orders/${id}/return`, data);
 
+export const quickAddCustomer = (data) => api.post('/customers/quick-add', data);
+
 export default {
-  getUsers() {
-    return api.get('/users');
+  getUsers(params = {}) {
+    return api.get('/users', { params });
   },
   createUser(data) {
     return api.post('/users', data);
