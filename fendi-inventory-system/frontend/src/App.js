@@ -12,11 +12,23 @@ import FinancialReports from './FinancialReports';
 
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     api.getCurrentUserData().then((response) => {
       setCurrentUser(response.data);
     });
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   if (!currentUser) {
@@ -31,7 +43,14 @@ const App = () => {
   return (
     <Router>
       <div className="p-4">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">{__('Fendi Inventory System', 'fendi-inventory-system')}</h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold text-gray-800">{__('Fendi Inventory System', 'fendi-inventory-system')}</h1>
+          {!isOnline && (
+            <div className="text-red-500 font-bold">
+              {__('Offline Mode', 'fendi-inventory-system')}
+            </div>
+          )}
+        </div>
         <nav className="mb-4">
           <ul className="flex">
             {canAccess('administrator') && (

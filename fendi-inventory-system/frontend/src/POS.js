@@ -4,6 +4,7 @@ import api from './api';
 import Modal from './Modal';
 import PaymentForm from './PaymentForm';
 import Receipt from './Receipt';
+import { idb } from './idb';
 
 const POS = () => {
   const [products, setProducts] = useState([]);
@@ -165,13 +166,22 @@ const POS = () => {
         <Modal onClose={() => setIsPaymentModalOpen(false)}>
           <PaymentForm
             total={getTotal()}
-            onSubmit={(data) => {
-              api.createOrder({ ...data, cart, warehouse_id: selectedWarehouse }).then((response) => {
+            onSubmit={async (data) => {
+              const orderData = { ...data, cart, warehouse_id: selectedWarehouse };
+              if (navigator.onLine) {
+                const response = await api.createOrder(orderData);
                 setCart([]);
                 setIsPaymentModalOpen(false);
                 setReceipt(response.data);
                 setIsReceiptModalOpen(true);
-              });
+              } else {
+                await idb.put('sales', orderData);
+                setCart([]);
+                setIsPaymentModalOpen(false);
+                setReceipt(orderData);
+                setIsReceiptModalOpen(true);
+                alert(__('Sale saved offline. It will be synced when you are back online.', 'fendi-inventory-system'));
+              }
             }}
             onCancel={() => setIsPaymentModalOpen(false)}
           />
