@@ -473,7 +473,8 @@ class Fendi_Inventory_System {
 
 		$plugin_public = new Fendi_Inventory_System_Public( $this->get_plugin_name(), $this->get_version() );
 
-		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
+		// The line below was causing a fatal error because the method does not exist in the public class.
+		// $this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 		$this->loader->add_action( 'wp_head', $plugin_public, 'add_manifest_link' );
 
