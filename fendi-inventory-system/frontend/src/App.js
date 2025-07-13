@@ -66,7 +66,10 @@ const App = () => {
 
   const canAccess = (role) => {
     if (!currentUser) return false;
-    return currentUser.roles.includes(role) || currentUser.roles.includes('administrator');
+    if (currentUser.roles.includes('administrator') || currentUser.roles.includes('shop_manager')) {
+        return true;
+    }
+    return currentUser.roles.includes(role);
   };
 
   return (
@@ -117,7 +120,7 @@ const App = () => {
                 <Link to="/inventory-count" className="text-blue-500 hover:text-blue-800">{__('Inventory Count', 'fendi-inventory-system')}</Link>
               </li>
             )}
-            {(canAccess('accountant') || canAccess('administrator')) && (
+            {(canAccess('accountant')) && (
               <>
                 <li className="mr-6">
                   <Link to="/suppliers" className="text-blue-500 hover:text-blue-800">{__('Suppliers', 'fendi-inventory-system')}</Link>

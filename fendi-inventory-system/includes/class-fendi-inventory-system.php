@@ -144,6 +144,21 @@ class Fendi_Inventory_System {
 				'edit_posts'   => true, // Accountants might need to edit some post types
 			)
 		);
+		add_role(
+			'shop_manager',
+			__( 'Shop Manager', 'fendi-inventory-system' ),
+			array(
+				'read'         => true,
+				'edit_posts'   => true,
+				'delete_posts' => true,
+				'publish_posts' => true,
+				'manage_options' => true, // To access settings
+				'list_users' => true,
+				'create_users' => true,
+				'edit_users' => true,
+				'delete_users' => true,
+			)
+		);
 	}
 
 	/**
@@ -156,6 +171,7 @@ class Fendi_Inventory_System {
 		remove_role( 'warehouse_manager' );
 		remove_role( 'cashier' );
 		remove_role( 'accountant' );
+		remove_role( 'shop_manager' );
 	}
 
 	/**
@@ -536,7 +552,7 @@ class Fendi_Inventory_System {
 	public function fendi_login_redirect( $redirect_to, $requested_redirect_to, $user ) {
 		// Check if login was successful and user is not an administrator.
 		if ( ! is_wp_error( $user ) ) {
-			$fendi_roles = array('cashier', 'warehouse_manager', 'accountant');
+			$fendi_roles = array('cashier', 'warehouse_manager', 'accountant', 'shop_manager');
 			$user_roles = (array) $user->roles;
 
 			// If the user has one of the custom roles and is not an admin
@@ -555,11 +571,11 @@ class Fendi_Inventory_System {
 			return;
 		}
 
-		if ( current_user_can( 'manage_options' ) ) {
+		if ( current_user_can( 'administrator' ) ) {
 			return;
 		}
 
-		$fendi_roles = array('cashier', 'warehouse_manager', 'accountant');
+		$fendi_roles = array('cashier', 'warehouse_manager', 'accountant', 'shop_manager');
 		$user = wp_get_current_user();
 		$user_roles = (array) $user->roles;
 
