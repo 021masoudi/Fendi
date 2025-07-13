@@ -451,6 +451,28 @@ class Fendi_Inventory_System_Api {
 			'callback' => array( $this, 'validate_discount_code' ),
 			'permission_callback' => array( $this, 'create_order_permissions_check' ),
 		) );
+
+		// Time Clock
+		register_rest_route( 'fendi/v1', '/time-clock/last', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'get_last_time_log' ),
+			'permission_callback' => '__return_true',
+		) );
+		register_rest_route( 'fendi/v1', '/time-clock/clock-in', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'clock_in' ),
+			'permission_callback' => '__return_true',
+		) );
+		register_rest_route( 'fendi/v1', '/time-clock/clock-out/(?P<id>\\d+)', array(
+			'methods' => 'POST',
+			'callback' => array( $this, 'clock_out' ),
+			'permission_callback' => '__return_true',
+		) );
+		register_rest_route( 'fendi/v1', '/time-logs', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'get_time_logs' ),
+			'permission_callback' => array( $this, 'manage_options_permission_check' ),
+		) );
 	}
 
 	/**
@@ -577,6 +599,101 @@ class Fendi_Inventory_System_Api {
 
 		$campaign->meta = get_post_meta( $campaign->ID );
 		return new WP_REST_Response( $campaign, 200 );
+	}
+
+	public function get_last_time_log( WP_REST_Request $request ) {
+		$user_id = get_current_user_id();
+		$posts = get_posts( array(
+			'post_type' => 'time_log',
+			'author' => $user_id,
+			'posts_per_page' => 1,
+			'orderby' => 'date',
+			'order' => 'DESC',
+		) );
+
+		if ( empty( $posts ) ) {
+			return new WP_REST_Response( null, 200 );
+		}
+
+		$log = $posts[0];
+		$log->clock_in = $log->post_date;
+		$log->clock_out = get_post_meta( $log->ID, '_clock_out_time', true );
+
+		return new WP_REST_Response( $log, 200 );
+	}
+
+	public function clock_in( WP_REST_Request $request ) {
+		$user_id = get_current_user_id();
+		$post_id = wp_insert_post( array(
+			'post_type' => 'time_log',
+			'post_title' => 'Clock In: ' . date('Y-m-d H:i:s'),
+			'post_author' => $user_id,
+			'post_status' => 'publish',
+		) );
+
+		if ( is_wp_error( $post_id ) ) {
+			return $post_id;
+		}
+
+		$log = get_post($post_id);
+		$log->clock_in = $log->post_date;
+		$log->clock_out = null;
+
+		return new WP_REST_Response( $log, 201 );
+	}
+
+	public function clock_out( WP_REST_Request $request ) {
+		$user_id = get_current_user_id();
+		$log_id = $request['id'];
+		$log = get_post($log_id);
+
+		if (!$log || $log->post_author != $user_id) {
+			return new WP_Error('invalid_log', __('Invalid time log.', 'fendi-inventory-system'), array('status' => 403));
+		}
+
+		$clock_out_time = current_time('mysql');
+		update_post_meta($log_id, '_clock_out_time', $clock_out_time);
+
+		$log->clock_out = $clock_out_time;
+
+		return new WP_REST_Response( $log, 200 );
+	}
+
+	public function get_time_logs( WP_REST_Request $request ) {
+		$args = array(
+			'post_type' => 'time_log',
+			'posts_per_page' => -1,
+			'orderby' => 'date',
+			'order' => 'DESC',
+		);
+
+		$params = $request->get_params();
+		if (!empty($params['user_id'])) {
+			$args['author'] = $params['user_id'];
+		}
+		if (!empty($params['start_date']) && !empty($params['end_date'])) {
+			$args['date_query'] = array(
+				array(
+					'after' => $params['start_date'],
+					'before' => $params['end_date'],
+					'inclusive' => true,
+				),
+			);
+		}
+
+		$posts = get_posts($args);
+		$logs = array();
+		foreach($posts as $post) {
+			$author_data = get_userdata($post->post_author);
+			$logs[] = array(
+				'id' => $post->ID,
+				'user_name' => $author_data->display_name,
+				'clock_in' => $post->post_date,
+				'clock_out' => get_post_meta( $post->ID, '_clock_out_time', true ),
+			);
+		}
+
+		return new WP_REST_Response($logs, 200);
 	}
 
 	/**

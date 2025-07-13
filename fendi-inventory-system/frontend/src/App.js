@@ -24,6 +24,8 @@ import AccountsPayable from './AccountsPayable';
 import SMSSettings from './SMSSettings';
 import LoyaltySettings from './LoyaltySettings';
 import DiscountCampaignManagement from './DiscountCampaignManagement';
+import TimeClock from './TimeClock';
+import TimeLogReport from './TimeLogReport';
 
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -169,8 +171,14 @@ const App = () => {
                     <Link to="/discounts" className="text-blue-500 hover:text-blue-800">{__('Discount Campaigns', 'fendi-inventory-system')}</Link>
                 </li>
             )}
+            {canAccess('administrator') && (
+                <li className="mr-6">
+                    <Link to="/reports/time-logs" className="text-blue-500 hover:text-blue-800">{__('Time Log Report', 'fendi-inventory-system')}</Link>
+                </li>
+            )}
           </ul>
         </nav>
+        {isOnline && <TimeClock currentUser={currentUser} />}
         <Routes>
           {canAccess('administrator') && <Route path="/users" element={<UserManagement />} />}
           {canAccess('warehouse_manager') && <Route path="/warehouses" element={<WarehouseManagement />} />}
@@ -197,6 +205,7 @@ const App = () => {
           {canAccess('administrator') && <Route path="/settings/sms" element={<SMSSettings />} />}
           {canAccess('administrator') && <Route path="/settings/loyalty" element={<LoyaltySettings />} />}
           {canAccess('administrator') && <Route path="/discounts" element={<DiscountCampaignManagement />} />}
+          {canAccess('administrator') && <Route path="/reports/time-logs" element={<TimeLogReport />} />}
         </Routes>
       </div>
     </Router>

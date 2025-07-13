@@ -50,6 +50,11 @@ export const updateDiscountCampaign = (id, data) => api.put(`/discount-campaigns
 export const deleteDiscountCampaign = (id) => api.delete(`/discount-campaigns/${id}`);
 export const validateDiscountCode = (code) => api.get(`/discounts/validate/${code}`);
 
+export const getLastTimeLog = () => api.get('/time-clock/last');
+export const clockIn = () => api.post('/time-clock/clock-in');
+export const clockOut = (id) => api.post(`/time-clock/clock-out/${id}`);
+export const getTimeLogs = (params) => api.get('/time-logs', { params });
+
 export default {
   getUsers() {
     return api.get('/users');
