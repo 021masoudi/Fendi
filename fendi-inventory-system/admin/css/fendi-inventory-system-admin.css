@@ -1383,8 +1383,14 @@ video {
 .min-h-screen {
   min-height: 100vh;
 }
+.w-1\/2 {
+  width: 50%;
+}
 .w-full {
   width: 100%;
+}
+.min-w-full {
+  min-width: 100%;
 }
 .table-auto {
   table-layout: auto;
@@ -1493,6 +1499,11 @@ video {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, 1);
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity, 1));
+}
+.bg-yellow-500 {
+  --tw-bg-opacity: 1;
+  background-color: rgba(234, 179, 8, 1);
+  background-color: rgba(234, 179, 8, var(--tw-bg-opacity, 1));
 }
 .p-2 {
   padding: 0.5rem;

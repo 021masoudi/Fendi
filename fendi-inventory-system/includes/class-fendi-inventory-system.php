@@ -136,6 +136,15 @@ class Fendi_Inventory_System {
 				'read' => true,
 			)
 		);
+		add_role(
+			'accountant',
+			__( 'Accountant', 'fendi-inventory-system' ),
+			array(
+				'read'         => true,
+				'edit_posts'   => true,
+				'delete_posts' => true,
+			)
+		);
 	}
 
 	/**
@@ -147,6 +156,7 @@ class Fendi_Inventory_System {
 	private function remove_roles() {
 		remove_role( 'warehouse_manager' );
 		remove_role( 'cashier' );
+		remove_role( 'accountant' );
 	}
 
 	/**
@@ -183,6 +193,8 @@ class Fendi_Inventory_System {
 		 * The class responsible for defining all actions that occur in the admin area.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-admin.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-supplier.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-purchase-order.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing

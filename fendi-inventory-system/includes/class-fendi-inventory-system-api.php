@@ -174,6 +174,96 @@ class Fendi_Inventory_System_Api {
 				'permission_callback' => array( $this, 'update_stock_request_permissions_check' ),
 			)
 		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/suppliers',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_suppliers' ),
+				'permission_callback' => array( $this, 'get_suppliers_permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/suppliers',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'create_supplier' ),
+				'permission_callback' => array( $this, 'create_supplier_permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/suppliers/(?P<id>\\d+)',
+			array(
+				'methods'             => 'PUT',
+				'callback'            => array( $this, 'update_supplier' ),
+				'permission_callback' => array( $this, 'update_supplier_permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/suppliers/(?P<id>\\d+)',
+			array(
+				'methods'             => 'DELETE',
+				'callback'            => array( $this, 'delete_supplier' ),
+				'permission_callback' => array( $this, 'delete_supplier_permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/purchase-orders',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_purchase_orders' ),
+				'permission_callback' => array( $this, 'get_purchase_orders_permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/purchase-orders',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'create_purchase_order' ),
+				'permission_callback' => array( $this, 'create_purchase_order_permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/purchase-orders/(?P<id>\\d+)',
+			array(
+				'methods'             => 'PUT',
+				'callback'            => array( $this, 'update_purchase_order' ),
+				'permission_callback' => array( $this, 'update_purchase_order_permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/purchase-orders/(?P<id>\\d+)',
+			array(
+				'methods'             => 'DELETE',
+				'callback'            => array( $this, 'delete_purchase_order' ),
+				'permission_callback' => array( $this, 'delete_purchase_order_permissions_check' ),
+			)
+		);
+
+		register_rest_route(
+			'fendi/v1',
+			'/financial-reports',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_financial_reports' ),
+				'permission_callback' => array( $this, 'get_financial_reports_permissions_check' ),
+			)
+		);
 	}
 
 	/**
@@ -443,6 +533,149 @@ class Fendi_Inventory_System_Api {
 	public function delete_warehouse( $request ) {
 		$post = get_post( $request['id'] );
 		if ( ! $post || $post->post_type !== 'warehouse' ) {
+			return new WP_Error( 'post_not_found', __( 'Post not found.', 'fendi-inventory-system' ), array( 'status' => 404 ) );
+		}
+
+		if ( ! current_user_can( 'delete_post', $post->ID ) ) {
+			return new WP_Error( 'permission_denied', __( 'You do not have permission to delete this post.', 'fendi-inventory-system' ), array( 'status' => 403 ) );
+		}
+
+		$result = wp_delete_post( $post->ID, true );
+
+		if ( ! $result ) {
+			return new WP_Error( 'post_deletion_failed', __( 'Failed to delete post.', 'fendi-inventory-system' ), array( 'status' => 500 ) );
+		}
+
+		return new WP_REST_Response( true, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to get purchase orders.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function get_purchase_orders_permissions_check( $request ) {
+		return current_user_can( 'manage_options' ) || current_user_can( 'accountant' );
+	}
+
+	/**
+	 * Get a list of purchase orders.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function get_purchase_orders( $request ) {
+		$posts = get_posts(
+			array(
+				'post_type'      => 'purchase_order',
+				'posts_per_page' => -1,
+			)
+		);
+		foreach ( $posts as $post ) {
+			$post->meta = get_post_meta( $post->ID );
+		}
+		return new WP_REST_Response( $posts, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to create a purchase order.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function create_purchase_order_permissions_check( $request ) {
+		return current_user_can( 'manage_options' ) || current_user_can( 'accountant' );
+	}
+
+	/**
+	 * Create a new purchase order.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function create_purchase_order( $request ) {
+		$params = $request->get_params();
+		$post_id = wp_insert_post(
+			array(
+				'post_title'  => $params['title'],
+				'post_type'   => 'purchase_order',
+				'post_status' => 'publish',
+			)
+		);
+
+		if ( is_wp_error( $post_id ) ) {
+			return $post_id;
+		}
+
+		if ( isset( $params['meta'] ) ) {
+			foreach ( $params['meta'] as $key => $value ) {
+				update_post_meta( $post_id, $key, $value );
+			}
+		}
+
+		$post = get_post( $post_id );
+		return new WP_REST_Response( $post, 201 );
+	}
+
+	/**
+	 * Check if a given request has access to update a purchase order.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function update_purchase_order_permissions_check( $request ) {
+		return current_user_can( 'manage_options' ) || current_user_can( 'accountant' );
+	}
+
+	/**
+	 * Update a purchase order.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function update_purchase_order( $request ) {
+		$params = $request->get_params();
+		$post_id = wp_update_post(
+			array(
+				'ID'         => $request['id'],
+				'post_title' => $params['title'],
+			)
+		);
+
+		if ( is_wp_error( $post_id ) ) {
+			return $post_id;
+		}
+
+		if ( isset( $params['meta'] ) ) {
+			foreach ( $params['meta'] as $key => $value ) {
+				update_post_meta( $post_id, $key, $value );
+			}
+		}
+
+		$post = get_post( $post_id );
+		return new WP_REST_Response( $post, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to delete a purchase order.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function delete_purchase_order_permissions_check( $request ) {
+		return current_user_can( 'manage_options' ) || current_user_can( 'accountant' );
+	}
+
+	/**
+	 * Delete a purchase order.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function delete_purchase_order( $request ) {
+		$post = get_post( $request['id'] );
+		if ( ! $post || $post->post_type !== 'purchase_order' ) {
 			return new WP_Error( 'post_not_found', __( 'Post not found.', 'fendi-inventory-system' ), array( 'status' => 404 ) );
 		}
 
@@ -745,5 +978,206 @@ class Fendi_Inventory_System_Api {
 		$post = get_post( $request['id'] );
 		$post->meta = get_post_meta( $post->ID );
 		return new WP_REST_Response( $post, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to get suppliers.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function get_suppliers_permissions_check( $request ) {
+		return current_user_can( 'manage_options' ) || current_user_can( 'accountant' );
+	}
+
+	/**
+	 * Get a list of suppliers.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function get_suppliers( $request ) {
+		$posts = get_posts(
+			array(
+				'post_type'      => 'supplier',
+				'posts_per_page' => -1,
+			)
+		);
+		foreach ( $posts as $post ) {
+			$post->meta = get_post_meta( $post->ID );
+		}
+		return new WP_REST_Response( $posts, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to create a supplier.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function create_supplier_permissions_check( $request ) {
+		return current_user_can( 'manage_options' ) || current_user_can( 'accountant' );
+	}
+
+	/**
+	 * Create a new supplier.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function create_supplier( $request ) {
+		$params = $request->get_params();
+		$post_id = wp_insert_post(
+			array(
+				'post_title'  => $params['title'],
+				'post_type'   => 'supplier',
+				'post_status' => 'publish',
+			)
+		);
+
+		if ( is_wp_error( $post_id ) ) {
+			return $post_id;
+		}
+
+		if ( isset( $params['meta'] ) ) {
+			foreach ( $params['meta'] as $key => $value ) {
+				update_post_meta( $post_id, $key, $value );
+			}
+		}
+
+		$post = get_post( $post_id );
+		return new WP_REST_Response( $post, 201 );
+	}
+
+	/**
+	 * Check if a given request has access to update a supplier.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function update_supplier_permissions_check( $request ) {
+		return current_user_can( 'manage_options' ) || current_user_can( 'accountant' );
+	}
+
+	/**
+	 * Update a supplier.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function update_supplier( $request ) {
+		$params = $request->get_params();
+		$post_id = wp_update_post(
+			array(
+				'ID'         => $request['id'],
+				'post_title' => $params['title'],
+			)
+		);
+
+		if ( is_wp_error( $post_id ) ) {
+			return $post_id;
+		}
+
+		if ( isset( $params['meta'] ) ) {
+			foreach ( $params['meta'] as $key => $value ) {
+				update_post_meta( $post_id, $key, $value );
+			}
+		}
+
+		$post = get_post( $post_id );
+		return new WP_REST_Response( $post, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to delete a supplier.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function delete_supplier_permissions_check( $request ) {
+		return current_user_can( 'manage_options' ) || current_user_can( 'accountant' );
+	}
+
+	/**
+	 * Delete a supplier.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function delete_supplier( $request ) {
+		$post = get_post( $request['id'] );
+		if ( ! $post || $post->post_type !== 'supplier' ) {
+			return new WP_Error( 'post_not_found', __( 'Post not found.', 'fendi-inventory-system' ), array( 'status' => 404 ) );
+		}
+
+		if ( ! current_user_can( 'delete_post', $post->ID ) ) {
+			return new WP_Error( 'permission_denied', __( 'You do not have permission to delete this post.', 'fendi-inventory-system' ), array( 'status' => 403 ) );
+		}
+
+		$result = wp_delete_post( $post->ID, true );
+
+		if ( ! $result ) {
+			return new WP_Error( 'post_deletion_failed', __( 'Failed to delete post.', 'fendi-inventory-system' ), array( 'status' => 500 ) );
+		}
+
+		return new WP_REST_Response( true, 200 );
+	}
+
+	/**
+	 * Check if a given request has access to get financial reports.
+	 *
+	 * @param  WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has read access, WP_Error object otherwise.
+	 */
+	public function get_financial_reports_permissions_check( $request ) {
+		return current_user_can( 'manage_options' ) || current_user_can( 'accountant' );
+	}
+
+	/**
+	 * Get financial reports.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, or WP_Error object on failure.
+	 */
+	public function get_financial_reports( $request ) {
+		$start_date = $request->get_param( 'start_date' );
+		$end_date   = $request->get_param( 'end_date' );
+
+		$args = array(
+			'post_type'      => 'shop_order',
+			'posts_per_page' => -1,
+			'post_status'    => array( 'wc-completed' ),
+			'date_query'     => array(
+				array(
+					'after'     => $start_date,
+					'before'    => $end_date,
+					'inclusive' => true,
+				),
+			),
+		);
+
+		$orders = wc_get_orders( $args );
+
+		$total_revenue = 0;
+		$total_cogs    = 0;
+
+		foreach ( $orders as $order ) {
+			$total_revenue += $order->get_total();
+			foreach ( $order->get_items() as $item ) {
+				$product_id = $item->get_product_id();
+				$cost_price = get_post_meta( $product_id, '_cost_price', true );
+				$total_cogs += $cost_price * $item->get_quantity();
+			}
+		}
+
+		$gross_profit = $total_revenue - $total_cogs;
+
+		$response = array(
+			'total_revenue' => $total_revenue,
+			'total_cogs'    => $total_cogs,
+			'gross_profit'  => $gross_profit,
+		);
+
+		return new WP_REST_Response( $response, 200 );
 	}
 }
