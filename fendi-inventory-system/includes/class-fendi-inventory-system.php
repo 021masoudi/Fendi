@@ -125,8 +125,7 @@ class Fendi_Inventory_System {
 			__( 'Warehouse Manager', 'fendi-inventory-system' ),
 			array(
 				'read'         => true,
-				'edit_posts'   => true,
-				'delete_posts' => true,
+				'edit_posts'   => true, // Warehouse managers might need to edit products/warehouses
 			)
 		);
 		add_role(
@@ -134,6 +133,7 @@ class Fendi_Inventory_System {
 			__( 'Cashier', 'fendi-inventory-system' ),
 			array(
 				'read' => true,
+				'edit_posts' => false, // Grant minimal capability to access admin area
 			)
 		);
 		add_role(
@@ -141,8 +141,7 @@ class Fendi_Inventory_System {
 			__( 'Accountant', 'fendi-inventory-system' ),
 			array(
 				'read'         => true,
-				'edit_posts'   => true,
-				'delete_posts' => true,
+				'edit_posts'   => true, // Accountants might need to edit some post types
 			)
 		);
 	}
