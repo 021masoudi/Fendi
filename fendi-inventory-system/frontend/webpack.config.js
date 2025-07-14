@@ -8,6 +8,10 @@ module.exports = {
     filename: 'fendi-inventory-system-admin.js',
     clean: true,
   },
+  externals: {
+    react: 'React',
+    'react-dom': 'ReactDOM',
+  },
   module: {
     rules: [
       {
