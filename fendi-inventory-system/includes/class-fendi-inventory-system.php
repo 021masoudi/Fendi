@@ -120,18 +120,12 @@ class Fendi_Inventory_System {
 	 * @access   private
 	 */
 	private function add_roles() {
-		$fendi_capability = 'access_fendi_panel';
-
-		// Add the custom capability to the administrator role
-		$admin_role = get_role( 'administrator' );
-		$admin_role->add_cap( $fendi_capability );
-
 		add_role(
 			'shop_manager',
 			__( 'Shop Manager', 'fendi-inventory-system' ),
 			array(
 				'read' => true,
-				$fendi_capability => true,
+				'manage_woocommerce' => true,
 			)
 		);
 		add_role(
@@ -139,7 +133,7 @@ class Fendi_Inventory_System {
 			__( 'Warehouse Manager', 'fendi-inventory-system' ),
 			array(
 				'read' => true,
-				$fendi_capability => true,
+				'manage_woocommerce' => true,
 			)
 		);
 		add_role(
@@ -147,7 +141,7 @@ class Fendi_Inventory_System {
 			__( 'Cashier', 'fendi-inventory-system' ),
 			array(
 				'read' => true,
-				$fendi_capability => true,
+				'manage_woocommerce' => true,
 			)
 		);
 		add_role(
@@ -155,7 +149,7 @@ class Fendi_Inventory_System {
 			__( 'Accountant', 'fendi-inventory-system' ),
 			array(
 				'read'         => true,
-				$fendi_capability => true,
+				'manage_woocommerce' => true,
 			)
 		);
 	}
@@ -273,8 +267,6 @@ class Fendi_Inventory_System {
 		// Loyalty Program Hooks
 		$this->loader->add_action( 'woocommerce_order_status_completed', $plugin_api, 'add_loyalty_points', 10, 1 );
 
-		// Block WP Admin access for non-admins
-		$this->loader->add_action('admin_init', $this, 'block_wp_admin_access');
 	}
 
 	/**
@@ -535,21 +527,5 @@ class Fendi_Inventory_System {
 	 */
 	public function get_version() {
 		return $this->version;
-	}
-
-	/**
-	 * Block non-administrator users from accessing the WordPress admin area.
-	 */
-	public function block_wp_admin_access() {
-		// Allow AJAX requests, and administrators to access the dashboard.
-		if ( ( defined( 'DOING_AJAX' ) && DOING_AJAX ) || current_user_can( 'manage_options' ) ) {
-			return;
-		}
-
-		// Redirect users with our custom capability to the Fendi panel.
-		if ( current_user_can( 'access_fendi_panel' ) ) {
-			wp_redirect( admin_url( 'admin.php?page=fendi-inventory-system' ) );
-			exit;
-		}
 	}
 }

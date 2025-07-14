@@ -102,7 +102,7 @@ class Fendi_Inventory_System_Admin {
 		add_menu_page(
 			__( 'Fendi Inventory System', 'fendi-inventory-system' ),
 			__( 'Fendi Inventory', 'fendi-inventory-system' ),
-			'access_fendi_panel', // Use our custom capability
+			'manage_woocommerce', // Use WooCommerce's capability
 			$this->plugin_name,
 			array( $this, 'display_admin_page' ),
 			'dashicons-store',
