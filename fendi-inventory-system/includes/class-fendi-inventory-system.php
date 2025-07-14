@@ -120,12 +120,26 @@ class Fendi_Inventory_System {
 	 * @access   private
 	 */
 	private function add_roles() {
+		$fendi_capability = 'access_fendi_panel';
+
+		// Add the custom capability to the administrator role
+		$admin_role = get_role( 'administrator' );
+		$admin_role->add_cap( $fendi_capability );
+
+		add_role(
+			'shop_manager',
+			__( 'Shop Manager', 'fendi-inventory-system' ),
+			array(
+				'read' => true,
+				$fendi_capability => true,
+			)
+		);
 		add_role(
 			'warehouse_manager',
 			__( 'Warehouse Manager', 'fendi-inventory-system' ),
 			array(
-				'read'         => true,
-				'edit_posts'   => true, // Warehouse managers might need to edit products/warehouses
+				'read' => true,
+				$fendi_capability => true,
 			)
 		);
 		add_role(
@@ -133,7 +147,7 @@ class Fendi_Inventory_System {
 			__( 'Cashier', 'fendi-inventory-system' ),
 			array(
 				'read' => true,
-				'edit_posts' => false, // Grant minimal capability to access admin area
+				$fendi_capability => true,
 			)
 		);
 		add_role(
@@ -141,22 +155,7 @@ class Fendi_Inventory_System {
 			__( 'Accountant', 'fendi-inventory-system' ),
 			array(
 				'read'         => true,
-				'edit_posts'   => true, // Accountants might need to edit some post types
-			)
-		);
-		add_role(
-			'shop_manager',
-			__( 'Shop Manager', 'fendi-inventory-system' ),
-			array(
-				'read'         => true,
-				'edit_posts'   => true,
-				'delete_posts' => true,
-				'publish_posts' => true,
-				'manage_options' => true, // To access settings
-				'list_users' => true,
-				'create_users' => true,
-				'edit_users' => true,
-				'delete_users' => true,
+				$fendi_capability => true,
 			)
 		);
 	}
@@ -273,9 +272,6 @@ class Fendi_Inventory_System {
 
 		// Loyalty Program Hooks
 		$this->loader->add_action( 'woocommerce_order_status_completed', $plugin_api, 'add_loyalty_points', 10, 1 );
-
-		// Login Redirect Hook
-		$this->loader->add_filter('login_redirect', $this, 'fendi_login_redirect', 10, 3);
 
 		// Block WP Admin access for non-admins
 		$this->loader->add_action('admin_init', $this, 'block_wp_admin_access');
@@ -542,44 +538,16 @@ class Fendi_Inventory_System {
 	}
 
 	/**
-	 * Redirect users to the Fendi admin panel after login.
-	 *
-	 * @param string $redirect_to           The redirect destination URL.
-	 * @param string $requested_redirect_to The requested redirect destination URL passed as a parameter.
-	 * @param WP_User|WP_Error $user        WP_User object if login was successful, WP_Error object otherwise.
-	 * @return string
-	 */
-	public function fendi_login_redirect( $redirect_to, $requested_redirect_to, $user ) {
-		// Check if login was successful and user is not an administrator.
-		if ( ! is_wp_error( $user ) ) {
-			$fendi_roles = array('cashier', 'warehouse_manager', 'accountant', 'shop_manager');
-			$user_roles = (array) $user->roles;
-
-			// If the user has one of the custom roles and is not an admin
-			if ( array_intersect( $fendi_roles, $user_roles ) && ! in_array( 'administrator', $user_roles ) ) {
-				return admin_url( 'admin.php?page=fendi-inventory-system' );
-			}
-		}
-		return $redirect_to;
-	}
-
-	/**
 	 * Block non-administrator users from accessing the WordPress admin area.
 	 */
 	public function block_wp_admin_access() {
-		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+		// Allow AJAX requests, and administrators to access the dashboard.
+		if ( ( defined( 'DOING_AJAX' ) && DOING_AJAX ) || current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
-		if ( current_user_can( 'administrator' ) ) {
-			return;
-		}
-
-		$fendi_roles = array('cashier', 'warehouse_manager', 'accountant', 'shop_manager');
-		$user = wp_get_current_user();
-		$user_roles = (array) $user->roles;
-
-		if ( array_intersect( $fendi_roles, $user_roles ) ) {
+		// Redirect users with our custom capability to the Fendi panel.
+		if ( current_user_can( 'access_fendi_panel' ) ) {
 			wp_redirect( admin_url( 'admin.php?page=fendi-inventory-system' ) );
 			exit;
 		}
