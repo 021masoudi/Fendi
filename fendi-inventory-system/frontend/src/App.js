@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { idb } from './idb';
