@@ -9,3 +9,9 @@ document.addEventListener('DOMContentLoaded', function () {
     ReactDOM.render(<App />, document.getElementById('fendi-inventory-system-admin'));
   }
 });
+
+if ('serviceWorker' in navigator && 'SyncManager' in window) {
+  navigator.serviceWorker.ready.then(sw => {
+    sw.sync.register('sync-sales');
+  });
+}

@@ -17,6 +17,8 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
+define( 'FENDI_INVENTORY_SYSTEM_FILE', __FILE__ );
+
 /**
  * The core plugin class that is used to define internationalization,
  * admin-specific hooks, and public-facing site hooks.

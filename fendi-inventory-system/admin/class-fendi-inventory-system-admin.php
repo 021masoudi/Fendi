@@ -74,6 +74,11 @@ class Fendi_Inventory_System_Admin {
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/fendi-inventory-system-admin.js', array( 'wp-element', 'wp-i18n' ), $this->version, true );
 
+		if ( 'product' === get_post_type() ) {
+			wp_enqueue_script( 'jsbarcode', 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js', array(), '3.11.5', true );
+			wp_enqueue_script( $this->plugin_name . '-barcode', plugin_dir_url( __FILE__ ) . 'js/fendi-inventory-system-barcode.js', array( 'jquery', 'jsbarcode' ), $this->version, true );
+		}
+
 		wp_set_script_translations( $this->plugin_name, 'fendi-inventory-system', plugin_dir_path( __FILE__ ) . '../languages' );
 
 		wp_localize_script(
@@ -178,6 +183,22 @@ class Fendi_Inventory_System_Admin {
 			</p>
 			<?php
 		}
+		?>
+		<hr>
+		<h4><?php esc_html_e( 'Barcode', 'fendi-inventory-system' ); ?></h4>
+		<p>
+			<button type="button" id="fendi-generate-barcode" class="button button-secondary" data-product-id="<?php echo esc_attr( $post->ID ); ?>">
+				<?php esc_html_e( 'Generate Barcode', 'fendi-inventory-system' ); ?>
+			</button>
+		</p>
+		<div id="fendi-barcode-modal" style="display:none;">
+			<div id="fendi-barcode-modal-content">
+				<svg id="fendi-barcode"></svg>
+				<button type="button" id="fendi-print-barcode" class="button button-primary"><?php esc_html_e( 'Print', 'fendi-inventory-system' ); ?></button>
+				<button type="button" id="fendi-close-barcode-modal" class="button button-secondary"><?php esc_html_e( 'Close', 'fendi-inventory-system' ); ?></button>
+			</div>
+		</div>
+		<?php
 	}
 
 	/**
@@ -221,6 +242,77 @@ class Fendi_Inventory_System_Admin {
 					sanitize_text_field( $_POST[ 'fendi_warehouse_' . $warehouse->ID ] )
 				);
 			}
+		}
+	}
+
+	/**
+	 * Render the user warehouse field.
+	 *
+	 * @since    1.0.0
+	 */
+	public function render_user_warehouse_field( $user ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		if ( ! in_array( 'cashier', $user->roles, true ) && ! in_array( 'warehouse_manager', $user->roles, true ) ) {
+			return;
+		}
+
+		wp_nonce_field( 'fendi_user_warehouse_data', 'fendi_user_warehouse_nonce' );
+
+		$warehouses = get_posts(
+			array(
+				'post_type'      => 'warehouse',
+				'posts_per_page' => -1,
+			)
+		);
+
+		$assigned_warehouse = get_user_meta( $user->ID, '_assigned_warehouse', true );
+		?>
+		<h3><?php esc_html_e( 'Warehouse Assignment', 'fendi-inventory-system' ); ?></h3>
+		<table class="form-table">
+			<tr>
+				<th>
+					<label for="fendi_assigned_warehouse">
+						<?php esc_html_e( 'Assigned Warehouse', 'fendi-inventory-system' ); ?>
+					</label>
+				</th>
+				<td>
+					<select name="fendi_assigned_warehouse" id="fendi_assigned_warehouse">
+						<option value=""><?php esc_html_e( 'Select a warehouse', 'fendi-inventory-system' ); ?></option>
+						<?php foreach ( $warehouses as $warehouse ) : ?>
+							<option value="<?php echo esc_attr( $warehouse->ID ); ?>" <?php selected( $assigned_warehouse, $warehouse->ID ); ?>>
+								<?php echo esc_html( $warehouse->post_title ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+				</td>
+			</tr>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Save the user warehouse field.
+	 *
+	 * @since    1.0.0
+	 */
+	public function save_user_warehouse_field( $user_id ) {
+		if ( ! isset( $_POST['fendi_user_warehouse_nonce'] ) ) {
+			return;
+		}
+
+		if ( ! wp_verify_nonce( $_POST['fendi_user_warehouse_nonce'], 'fendi_user_warehouse_data' ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'edit_user', $user_id ) ) {
+			return;
+		}
+
+		if ( isset( $_POST['fendi_assigned_warehouse'] ) ) {
+			update_user_meta( $user_id, '_assigned_warehouse', sanitize_text_field( $_POST['fendi_assigned_warehouse'] ) );
 		}
 	}
 }

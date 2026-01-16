@@ -78,7 +78,85 @@ class Fendi_Inventory_System {
 		$this->set_locale();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
+		$this->define_activation_hooks();
 
+	}
+
+	/**
+	 * Define the activation and deactivation hooks.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 */
+	private function define_activation_hooks() {
+		register_activation_hook( FENDI_INVENTORY_SYSTEM_FILE, array( $this, 'activate' ) );
+		register_deactivation_hook( FENDI_INVENTORY_SYSTEM_FILE, array( $this, 'deactivate' ) );
+	}
+
+	/**
+	 * The code that runs during plugin activation.
+	 *
+	 * @since    1.0.0
+	 */
+	public function activate() {
+		$this->add_roles();
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * The code that runs during plugin deactivation.
+	 *
+	 * @since    1.0.0
+	 */
+	public function deactivate() {
+		$this->remove_roles();
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * Add custom user roles.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 */
+	private function add_roles() {
+		add_role(
+			'warehouse_manager',
+			__( 'Warehouse Manager', 'fendi-inventory-system' ),
+			array(
+				'read'         => true,
+				'edit_posts'   => true,
+				'delete_posts' => true,
+			)
+		);
+		add_role(
+			'cashier',
+			__( 'Cashier', 'fendi-inventory-system' ),
+			array(
+				'read' => true,
+			)
+		);
+		add_role(
+			'accountant',
+			__( 'Accountant', 'fendi-inventory-system' ),
+			array(
+				'read'         => true,
+				'edit_posts'   => true,
+				'delete_posts' => true,
+			)
+		);
+	}
+
+	/**
+	 * Remove custom user roles.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 */
+	private function remove_roles() {
+		remove_role( 'warehouse_manager' );
+		remove_role( 'cashier' );
+		remove_role( 'accountant' );
 	}
 
 	/**
@@ -115,6 +193,11 @@ class Fendi_Inventory_System {
 		 * The class responsible for defining all actions that occur in the admin area.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-admin.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-supplier.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-purchase-order.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-settings.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-expense.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-fendi-inventory-system-transaction.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing
@@ -126,6 +209,7 @@ class Fendi_Inventory_System {
 		 * The class responsible for defining all API routes.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-fendi-inventory-system-api.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-fendi-inventory-system-notifications.php';
 
 		$this->loader = new Fendi_Inventory_System_Loader();
 
@@ -167,6 +251,10 @@ class Fendi_Inventory_System {
 		$this->loader->add_action( 'init', $this, 'register_post_types' );
 		$this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'add_warehouse_inventory_metabox' );
 		$this->loader->add_action( 'save_post_product', $plugin_admin, 'save_warehouse_inventory_metabox' );
+		$this->loader->add_action( 'show_user_profile', $plugin_admin, 'render_user_warehouse_field' );
+		$this->loader->add_action( 'edit_user_profile', $plugin_admin, 'render_user_warehouse_field' );
+		$this->loader->add_action( 'personal_options_update', $plugin_admin, 'save_user_warehouse_field' );
+		$this->loader->add_action( 'edit_user_profile_update', $plugin_admin, 'save_user_warehouse_field' );
 
 	}
 
@@ -255,6 +343,41 @@ class Fendi_Inventory_System {
 		);
 
 		register_post_type( 'stock_request', $args );
+
+		$labels = array(
+			'name'                  => _x( 'Notifications', 'Post type general name', 'fendi-inventory-system' ),
+			'singular_name'         => _x( 'Notification', 'Post type singular name', 'fendi-inventory-system' ),
+			'menu_name'             => _x( 'Notifications', 'Admin Menu text', 'fendi-inventory-system' ),
+			'name_admin_bar'        => _x( 'Notification', 'Add New on Toolbar', 'fendi-inventory-system' ),
+			'add_new'               => __( 'Add New', 'fendi-inventory-system' ),
+			'add_new_item'          => __( 'Add New Notification', 'fendi-inventory-system' ),
+			'new_item'              => __( 'New Notification', 'fendi-inventory-system' ),
+			'edit_item'             => __( 'Edit Notification', 'fendi-inventory-system' ),
+			'view_item'             => __( 'View Notification', 'fendi-inventory-system' ),
+			'all_items'             => __( 'All Notifications', 'fendi-inventory-system' ),
+			'search_items'          => __( 'Search Notifications', 'fendi-inventory-system' ),
+			'parent_item_colon'     => __( 'Parent Notifications:', 'fendi-inventory-system' ),
+			'not_found'             => __( 'No notifications found.', 'fendi-inventory-system' ),
+			'not_found_in_trash'    => __( 'No notifications found in Trash.', 'fendi-inventory-system' ),
+		);
+
+		$args = array(
+			'labels'             => $labels,
+			'public'             => false,
+			'publicly_queryable' => false,
+			'show_ui'            => true,
+			'show_in_menu'       => 'fendi-inventory-system',
+			'query_var'          => false,
+			'rewrite'            => false,
+			'capability_type'    => 'post',
+			'has_archive'        => false,
+			'hierarchical'       => false,
+			'menu_position'      => null,
+			'supports'           => array( 'title', 'editor' ),
+			'show_in_rest'       => true,
+		);
+
+		register_post_type( 'notification', $args );
 	}
 
 	/**
@@ -270,6 +393,7 @@ class Fendi_Inventory_System {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
+		$this->loader->add_action( 'wp_head', $plugin_public, 'add_manifest_link' );
 
 	}
 

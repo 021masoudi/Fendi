@@ -86,6 +86,21 @@ class Fendi_Inventory_System_Public {
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/fendi-inventory-system-public.js', array( 'jquery' ), $this->version, false );
 
+		wp_add_inline_script( $this->plugin_name, "
+			if ('serviceWorker' in navigator) {
+				window.addEventListener('load', function() {
+					navigator.serviceWorker.register('/wp-content/plugins/fendi-inventory-system/public/service-worker.js').then(function(registration) {
+						console.log('ServiceWorker registration successful with scope: ', registration.scope);
+					}, function(err) {
+						console.log('ServiceWorker registration failed: ', err);
+					});
+				});
+			}
+		" );
+	}
+
+	public function add_manifest_link() {
+		echo '<link rel="manifest" href="/wp-content/plugins/fendi-inventory-system/public/manifest.json">';
 	}
 
 }

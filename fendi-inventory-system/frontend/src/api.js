@@ -7,6 +7,35 @@ const api = axios.create({
   },
 });
 
+export const getSuppliers = () => api.get('/suppliers');
+export const createSupplier = (data) => api.post('/suppliers', data);
+export const updateSupplier = (id, data) => api.put(`/suppliers/${id}`, data);
+export const deleteSupplier = (id) => api.delete(`/suppliers/${id}`);
+
+export const getPurchaseOrders = () => api.get('/purchase-orders');
+export const createPurchaseOrder = (data) => api.post('/purchase-orders', data);
+export const updatePurchaseOrder = (id, data) => api.put(`/purchase-orders/${id}`, data);
+export const deletePurchaseOrder = (id) => api.delete(`/purchase-orders/${id}`);
+
+export const getFinancialReports = (startDate, endDate) => api.get('/financial-reports', { params: { start_date: startDate, end_date: endDate } });
+
+export const getProducts = (search = '') => api.get(`/products?s=${search}`);
+
+export const getNotifications = () => api.get('/notifications');
+
+export const getExpenses = () => api.get('/expenses');
+export const createExpense = (data) => api.post('/expenses', data);
+export const updateExpense = (id, data) => api.put(`/expenses/${id}`, data);
+export const deleteExpense = (id) => api.delete(`/expenses/${id}`);
+
+export const getTransactions = () => api.get('/transactions');
+export const createTransaction = (data) => api.post('/transactions', data);
+export const updateTransaction = (id, data) => api.put(`/transactions/${id}`, data);
+export const deleteTransaction = (id) => api.delete(`/transactions/${id}`);
+
+export const getLedger = (account) => api.get(`/ledger/${account}`);
+export const getBalanceSheet = () => api.get('/balance-sheet');
+
 export default {
   getUsers() {
     return api.get('/users');
@@ -31,9 +60,6 @@ export default {
   },
   deleteWarehouse(id) {
     return api.delete(`/warehouses/${id}`);
-  },
-  getProducts(search = '') {
-    return api.get(`/products?s=${search}`);
   },
   createOrder(data) {
     return api.post('/orders', data);
